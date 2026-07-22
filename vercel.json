@@ -13,6 +13,6 @@
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/((?!api/|assets/|favicon\.).*)", "destination": "/index.html" }
+    { "source": "/((?!api/)[^.]+)", "destination": "/index.html" }
   ]
 }
