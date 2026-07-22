@@ -37,6 +37,9 @@ function getFirebaseAdmin() {
   // stored with literal `\n` sequences that need to be replaced.
   privateKey = privateKey.replace(/\\n/g, '\n');
 
+  // Also handle the case where the key uses single backslash-n (as in Firebase JSON format)
+  privateKey = privateKey.replace(/\n/g, '\n');
+
   initializeApp({
     credential: cert({ projectId, clientEmail, privateKey }),
   });
