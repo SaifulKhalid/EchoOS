@@ -1,0 +1,11 @@
+{
+  "name": "echoos-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "EchoOS Vercel serverless proxy — holds secret keys (Groq, TMDB)",
+  "dependencies": {
+    "@vercel/node": "^5.1.14",
+    "firebase-admin": "^12.7.0"
+  }
+}

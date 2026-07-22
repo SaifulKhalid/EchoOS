@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// EchoOS Storage rules — users may only read/write files under their own
+// uid prefix (e.g. food photos, travel photos). 5 MB per-file cap and an
+// images-only content-type guard keep Spann/Spark storage economical.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{uid}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

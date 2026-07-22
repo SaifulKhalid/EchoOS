@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────
+// EchoOS Firestore Security Rules
+// Privacy-by-design: all user data lives under users/{uid}. A request
+// may only touch documents whose uid path segment equals the caller's
+// authenticated uid. There is NO path by which one user can read or
+// write another user's data.
+// ─────────────────────────────────────────────────────────────
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── helpers ────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    // Guard against unbounded documents (Spark storage + cost hygiene).
+    function withinSize(maxLen) {
+      return incoming().keys().size() <= maxLen;
+    }
+    function ratingValid() {
+      return !('rating' in incoming())
+        || (incoming().rating is number
+            && incoming().rating >= 0
+            && incoming().rating <= 10);
+    }
+
+    // ── user profile document ──────────────────────────────
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && incoming().uid == uid
+        && withinSize(12);
+      allow update: if isOwner(uid) && incoming().uid == uid;
+      allow delete: if isOwner(uid);
+
+      // ── generic per-user subcollections ──────────────────
+      // Covers movies, foods, travel, notes, wishlist, memories,
+      // chats, ai_profile, analytics, preferences, insights, settings.
+      match /{collection}/{docId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && ratingValid()
+          && withinSize(40);
+        allow delete: if isOwner(uid);
+
+        // Nested chat messages: users/{uid}/chats/{chatId}/messages/{msgId}
+        match /{sub}/{subId} {
+          allow read: if isOwner(uid);
+          allow create, update: if isOwner(uid) && withinSize(20);
+          allow delete: if isOwner(uid);
+        }
+      }
+    }
+
+    // Everything else is denied by default (no fallthrough).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

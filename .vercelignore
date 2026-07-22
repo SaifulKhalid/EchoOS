@@ -1,0 +1,32 @@
+# EchoOS — files excluded from Vercel deployment
+# Only files that are NOT needed during the build process should be listed here.
+# NOTE: src/ and build config files (postcss, tailwind, tsconfig) ARE needed
+# during `npm run build` and must NOT be excluded.
+
+# CI — not needed for build
+.github
+
+# Documentation
+README.md
+*.md
+
+# Local env — never upload to Vercel
+.env
+.env.*
+*.local
+
+# Firebase config — only needed for `firebase deploy`, not for Vercel build
+.firebase
+firebase.json
+firestore.*
+storage.rules
+
+# Test infra — not needed for production build
+vitest.config.ts
+vitest.setup.ts
+
+# Lint config — not needed for build
+eslint.config.js
+
+# Editor config
+.editorconfig
