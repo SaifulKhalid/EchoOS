@@ -178,7 +178,8 @@ export async function streamChat(
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('You must be signed in to chat.');
 
-  const url = new URL(`${API_BASE_URL}/api/chat`);
+  const base = API_BASE_URL || window.location.origin;
+  const url = new URL(`${base}/api/chat`);
   url.searchParams.set('stream', '1');
 
   const res = await fetch(url.toString(), {

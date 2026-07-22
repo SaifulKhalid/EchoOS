@@ -30,7 +30,8 @@ async function proxyFetch<T>(path: string, params: Record<string, string>): Prom
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('You must be signed in to search movies.');
 
-  const url = new URL(`${API_BASE_URL}/api/tmdb`);
+  const base = API_BASE_URL || window.location.origin;
+  const url = new URL(`${base}/api/tmdb`);
   url.searchParams.set('path', path);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 

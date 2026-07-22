@@ -42,8 +42,14 @@ export const firebaseConfig: FirebaseEnv = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+/**
+ * Base URL of the Vercel serverless proxy that holds the SECRET keys
+ * (Groq + TMDB). When deployed on Vercel, the API lives at the same
+ * origin as the frontend, so we default to empty string (same-origin).
+ * In local dev, set VITE_API_BASE_URL=http://localhost:3000
+ */
 export const API_BASE_URL: string =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  import.meta.env.VITE_API_BASE_URL || '';
 
 /**
  * LOCAL-DEV-ONLY TMDB key. When present, the client calls TMDB directly so
