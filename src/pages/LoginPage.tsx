@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import { signInWithGoogle, signInAsGuest } from '@/firebase/auth';
+import { signInWithGoogle, signInAsGuest, handleRedirectResult } from '@/firebase/auth';
 import { Logo } from '@/components/layout/Logo';
 import { IconGoogle, IconSparkle } from '@/components/ui/icons';
 import { APP_TAGLINE, ROUTES } from '@/config/constants';
@@ -18,6 +18,11 @@ export function LoginPage() {
   const location = useLocation();
   const [busy, setBusy] = useState<null | 'google' | 'guest'>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Process the redirect result after Google sign-in redirects back
+  useEffect(() => {
+    handleRedirectResult();
+  }, []);
 
   const from = (location.state as { from?: Location })?.from?.pathname ?? ROUTES.dashboard;
   if (!loading && user) return <Navigate to={from} replace />;

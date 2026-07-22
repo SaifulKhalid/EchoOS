@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -7,7 +7,7 @@ import { PwaStatus } from '@/components/ui/PwaStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreferences, type AiPersona } from '@/hooks/usePreferences';
 import { useReminders, useAddReminder, useDeleteReminder } from '@/hooks/useReminders';
-import { upgradeGuestToGoogle, signOut } from '@/firebase/auth';
+import { upgradeGuestToGoogle, handleRedirectResult, signOut } from '@/firebase/auth';
 import { IconGoogle, IconClock, IconTrash } from '@/components/ui/icons';
 import { dateToInputValue, todayInputValue } from '@/utils/dates';
 import type { ReminderInterval } from '@/types';
@@ -39,6 +39,16 @@ export default function SettingsPage() {
   const [remMsg, setRemMsg] = useState('');
   const [remDate, setRemDate] = useState(todayInputValue());
   const [remInterval, setRemInterval] = useState<ReminderInterval>('once');
+
+  // Process redirect result after guest-to-Google upgrade
+  useEffect(() => {
+    handleRedirectResult().then((u) => {
+      if (u) {
+        setMsg('Account linked — your memories are now saved to Google.');
+      }
+    });
+  }, []);
+
   async function upgrade() {
     setBusy(true);
     setMsg(null);

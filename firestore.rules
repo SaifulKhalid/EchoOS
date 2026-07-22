@@ -6,11 +6,22 @@ rules_version = '2';
 // may only touch documents whose uid path segment equals the caller's
 // authenticated uid. There is NO path by which one user can read or
 // write another user's data.
+//
+// Active collections:
+//   users/{uid}                          — user profile
+//   users/{uid}/movies/{id}              — movie log
+//   users/{uid}/food/{id}                — food journal
+//   users/{uid}/travel/{id}              — travel log
+//   users/{uid}/notes/{id}               — notes
+//   users/{uid}/wishlist/{id}            — wishlist
+//   users/{uid}/notifications/{id}       — in-app notifications
+//   users/{uid}/reminders/{id}           — reminders
+//   users/{uid}/chats/{sessionId}/messages/{id}  — chat messages
 // ─────────────────────────────────────────────────────────────
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── helpers ────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────
     function isSignedIn() {
       return request.auth != null;
     }
@@ -20,10 +31,11 @@ service cloud.firestore {
     function incoming() {
       return request.resource.data;
     }
-    // Guard against unbounded documents (Spark storage + cost hygiene).
+    // Prevent unbounded document growth (Spark plan cost hygiene).
     function withinSize(maxLen) {
       return incoming().keys().size() <= maxLen;
     }
+    // Rating must be a number between 0 and 10 (used by movies, food, travel).
     function ratingValid() {
       return !('rating' in incoming())
         || (incoming().rating is number
@@ -31,18 +43,19 @@ service cloud.firestore {
             && incoming().rating <= 10);
     }
 
-    // ── user profile document ──────────────────────────────
+    // ── User profile document ─────────────────────────────
     match /users/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && incoming().uid == uid
         && withinSize(12);
-      allow update: if isOwner(uid) && incoming().uid == uid;
+      allow update: if isOwner(uid)
+        && incoming().uid == uid
+        && withinSize(12);
       allow delete: if isOwner(uid);
 
-      // ── generic per-user subcollections ──────────────────
-      // Covers movies, foods, travel, notes, wishlist, memories,
-      // chats, ai_profile, analytics, preferences, insights, settings.
+      // ── Per-user subcollections ──────────────────────────
+      // Wildcard covers all data collections listed above.
       match /{collection}/{docId} {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
@@ -50,7 +63,7 @@ service cloud.firestore {
           && withinSize(40);
         allow delete: if isOwner(uid);
 
-        // Nested chat messages: users/{uid}/chats/{chatId}/messages/{msgId}
+        // Nested subcollection: sessions/chats/messages
         match /{sub}/{subId} {
           allow read: if isOwner(uid);
           allow create, update: if isOwner(uid) && withinSize(20);
@@ -59,7 +72,7 @@ service cloud.firestore {
       }
     }
 
-    // Everything else is denied by default (no fallthrough).
+    // Deny everything else by default.
     match /{document=**} {
       allow read, write: if false;
     }

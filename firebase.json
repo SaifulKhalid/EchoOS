@@ -21,8 +21,5 @@
         ]
       }
     ]
-  },
-  "storage": {
-    "rules": "storage.rules"
   }
 }
