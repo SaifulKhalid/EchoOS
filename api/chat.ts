@@ -189,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 // ── Helpers ─────────────────────────────────────────────────
 
 /** Write a JSON object as an SSE `data:` event. */
-function writeSSE(res: VercelResponse, data: Record<string, unknown>) {
+function writeSSE(res: VercelResponse, data: object) {
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
