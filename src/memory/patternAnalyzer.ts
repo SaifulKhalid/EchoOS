@@ -10,7 +10,6 @@
  */
 
 import type { MemoryCategory } from '@/config/constants';
-import type { MovieEntry, FoodEntry, TravelEntry, NoteEntry, WishlistEntry } from '@/types';
 import type { MemoryBundle } from './memoryRetriever';
 
 // ── Types ───────────────────────────────────────────────────

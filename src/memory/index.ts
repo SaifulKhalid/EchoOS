@@ -26,7 +26,6 @@
  */
 
 import type { AiPersona } from '@/hooks/usePreferences';
-import type { MemoryBundle } from './memoryRetriever';
 import type { ProcessedResponse } from './responseFormatter';
 
 import { detectIntent, type IntentResult } from './intentDetector';

@@ -290,7 +290,6 @@ export function detectIntent(message: string): IntentResult {
   const narrowed = narrowCategories(text, defaultCategories);
 
   // Calculate confidence based on match quality
-  const totalPatterns = Object.keys(INTENT_PATTERNS[bestIntent].keywords).length;
   const rawConfidence = Math.min(bestScore / 50, 1);
   const confidence = Math.max(0.3, rawConfidence);
 

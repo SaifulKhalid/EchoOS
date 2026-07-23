@@ -25,7 +25,7 @@ export interface ReasoningBlock {
  * Generate reasoning for a recommendation response.
  */
 function recommendationReasoning(patterns: PatternAnalysis): ReasoningBlock {
-  const { userProfile, frequencies, correlations } = patterns;
+  const { userProfile, correlations } = patterns;
   const evidence: string[] = [];
   const supportingData: Record<string, number | string> = {};
 
@@ -73,7 +73,7 @@ function recommendationReasoning(patterns: PatternAnalysis): ReasoningBlock {
  * Generate reasoning for a pattern discovery response.
  */
 function patternReasoning(patterns: PatternAnalysis): ReasoningBlock {
-  const { userProfile, trends, correlations, recentActivity } = patterns;
+  const { userProfile, trends, frequencies, correlations, recentActivity } = patterns;
   const evidence: string[] = [];
   const supportingData: Record<string, number | string> = {};
 

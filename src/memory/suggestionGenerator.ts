@@ -13,7 +13,6 @@
 
 import type { IntentType } from './intentDetector';
 import type { PatternAnalysis } from './patternAnalyzer';
-import type { MemoryBundle } from './memoryRetriever';
 
 export interface SuggestionSet {
   /** 2-4 follow-up questions the user could click. */

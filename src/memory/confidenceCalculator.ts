@@ -56,7 +56,7 @@ const MIN_ENTRIES_BY_INTENT: Partial<Record<IntentType, number>> = {
  */
 export function calculateConfidence(
   intent: IntentType,
-  retrieval: { memories: MemoryBundle; totalCount: number; categoryCounts: Record<string, number> },
+  _retrieval: { memories: MemoryBundle; totalCount: number; categoryCounts: Record<string, number> },
   patterns: PatternAnalysis,
 ): ConfidenceResult {
   const { userProfile, recentActivity } = patterns;

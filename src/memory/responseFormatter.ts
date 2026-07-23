@@ -220,7 +220,7 @@ function checkUserDataBasis(
   }
 
   // Check for category-specific data
-  for (const [cat, count] of Object.entries(patterns.userProfile.entryCounts)) {
+  for (const [, count] of Object.entries(patterns.userProfile.entryCounts)) {
     if (count > 0 && textLower.includes(String(count))) return true;
   }
 
@@ -257,7 +257,7 @@ function checkUserDataBasis(
  */
 export function processResponse(
   rawText: string,
-  intent: IntentType,
+  _intent: IntentType,
   memories: MemoryBundle,
   patterns: PatternAnalysis,
   confidence: ConfidenceResult,

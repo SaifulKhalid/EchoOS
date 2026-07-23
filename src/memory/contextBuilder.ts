@@ -63,7 +63,7 @@ export function buildStructuredContext(
   patterns: PatternAnalysis,
 ): StructuredContext {
   const sections: string[] = [];
-  const { userProfile, trends, frequencies, correlations, distributions, recentActivity } = patterns;
+  const { userProfile, trends, frequencies, correlations, recentActivity } = patterns;
 
   // ── Section: USER PROFILE ─────────────────────────────────
   const profileLines: string[] = ['## User Profile'];
@@ -213,7 +213,6 @@ export function buildStructuredContext(
   const memLines: string[] = ['## Relevant Memories'];
 
   const { memories } = retrieval;
-  const intentName = intent.intent;
   const categories = intent.categories;
 
   // Show relevant entries — limited to 3-5 per category to avoid token waste
