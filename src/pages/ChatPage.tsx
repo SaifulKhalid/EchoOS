@@ -194,7 +194,7 @@ export default function ChatPage() {
             <div className="flex items-center justify-center py-20">
               <div className="flex flex-col items-center gap-3">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
-                <p className="text-xs text-white/35">Loading conversation…</p>
+                <p className="text-xs text-white/55">Loading conversation…</p>
               </div>
             </div>
           ) : messages.length === 0 && !isSending ? (
@@ -279,6 +279,9 @@ export default function ChatPage() {
         {/* ── Input ── */}
         <div className="sticky bottom-0 pt-2">
           <ChatInput onSend={handleSend} disabled={isSending} />
+          <p className="mt-1.5 text-center text-[10px] text-white/25">
+            Messages are processed by Groq's third-party API. Avoid sharing sensitive personal information.
+          </p>
         </div>
       </div>
     </>

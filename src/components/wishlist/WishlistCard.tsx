@@ -78,7 +78,7 @@ export function WishlistCard({
       <p
         className={`mb-1 text-sm font-medium ${
           entry.done
-            ? 'text-white/40 line-through'
+            ? 'text-white/55 line-through'
             : 'text-white/90 group-hover:text-white'
         }`}
       >
@@ -87,13 +87,13 @@ export function WishlistCard({
 
       {/* Note preview */}
       {entry.note && (
-        <p className="line-clamp-2 text-xs text-white/45">{entry.note}</p>
+        <p className="line-clamp-2 text-xs text-white/60">{entry.note}</p>
       )}
 
       {/* Mood */}
       {entry.mood && (
         <div className="mt-2">
-          <span className="text-[10px] text-white/35">
+          <span className="text-[10px] text-white/55">
             {MOODS.find((m) => m.id === entry.mood)?.label}
           </span>
         </div>

@@ -4,6 +4,7 @@ import { useUpdateMovie, useDeleteMovie } from '@/hooks/useMovies';
 import { MOODS, type MoodId } from '@/config/constants';
 import { StarRating } from '@/components/ui/StarRating';
 import { IconSparkle } from '@/components/ui/icons';
+import { useToastStore } from '@/services/toastStore';
 import type { MovieEntry } from '@/types';
 
 /**
@@ -45,33 +46,47 @@ export function MovieEditModal({
       .map((t) => t.trim().toLowerCase())
       .filter(Boolean);
 
-    await updateMovie.mutateAsync({
-      id: movie.id,
-      data: {
-        rating: rating || undefined,
-        mood: mood || undefined,
-        review: review || undefined,
-        favorite,
-        rewatch,
-        tags: tags.length > 0 ? tags : undefined,
-      },
-    });
-    onClose();
+    try {
+      await updateMovie.mutateAsync({
+        id: movie.id,
+        data: {
+          rating: rating || undefined,
+          mood: mood || undefined,
+          review: review || undefined,
+          favorite,
+          rewatch,
+          tags: tags.length > 0 ? tags : undefined,
+        },
+      });
+      useToastStore.getState().success(`Updated "${movie.title}"`);
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to save. Please check your connection and try again.');
+    }
   }, [movie.id, rating, mood, review, favorite, rewatch, tagsInput, updateMovie, onClose]);
 
   const handleDelete = useCallback(async () => {
-    await deleteMovie.mutateAsync(movie.id);
-    onClose();
+    if (!window.confirm(`Delete "${movie.title}"? This cannot be undone.`)) return;
+    try {
+      await deleteMovie.mutateAsync(movie.id);
+      useToastStore.getState().success(`Deleted "${movie.title}"`);
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to delete. Please try again.');
+    }
   }, [movie.id, deleteMovie, onClose]);
 
   // Close on Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (dirty && !window.confirm('Discard unsaved changes?')) return;
+        onClose();
+      }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, dirty]);
 
   const saving = updateMovie.isPending;
   const deleting = deleteMovie.isPending;
@@ -85,7 +100,10 @@ export function MovieEditModal({
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink-950/70 p-4 backdrop-blur-sm"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) {
+            if (dirty && !window.confirm('Discard unsaved changes?')) return;
+            onClose();
+          }
         }}
       >
         <motion.div
@@ -102,7 +120,10 @@ export function MovieEditModal({
           <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
             <h2 className="font-display text-lg font-semibold">Edit Entry</h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (dirty && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
               aria-label="Close dialog"
             >
@@ -130,7 +151,7 @@ export function MovieEditModal({
                 <h3 className="font-display text-xl font-semibold leading-tight">
                   {movie.title}
                 </h3>
-                <p className="mt-0.5 text-sm text-white/50">
+                <p className="mt-0.5 text-sm text-white/60">
                   {movie.year}
                   {movie.director ? ` · ${movie.director}` : ''}
                   {movie.runtime ? ` · ${movie.runtime} min` : ''}
@@ -140,7 +161,7 @@ export function MovieEditModal({
                     {movie.genres.map((g) => (
                       <span
                         key={g}
-                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] text-white/50"
+                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] text-white/60"
                       >
                         {g}
                       </span>
@@ -153,7 +174,7 @@ export function MovieEditModal({
             <div className="space-y-5">
               {/* Rating */}
               <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Your Rating
                 </label>
                 <StarRating value={rating} onChange={setRating} size="2xl" />
@@ -161,7 +182,7 @@ export function MovieEditModal({
 
               {/* Mood */}
               <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Mood
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -172,7 +193,7 @@ export function MovieEditModal({
                       className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         mood === m.id
                           ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80'
+                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
                       }`}
                     >
                       {m.label}
@@ -183,10 +204,11 @@ export function MovieEditModal({
 
               {/* Review */}
               <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="movie-review" className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Review
                 </label>
                 <textarea
+                  id="movie-review"
                   value={review}
                   onChange={(e) => setReview(e.target.value)}
                   placeholder="What did you think of this movie?"
@@ -219,10 +241,11 @@ export function MovieEditModal({
 
               {/* Tags */}
               <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="movie-tags" className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Tags
                 </label>
                 <input
+                  id="movie-tags"
                   type="text"
                   value={tagsInput}
                   onChange={(e) => setTagsInput(e.target.value)}
@@ -244,7 +267,10 @@ export function MovieEditModal({
             </button>
             <div className="flex gap-3">
               <button
-                onClick={onClose}
+                onClick={() => {
+                  if (dirty && !window.confirm('Discard unsaved changes?')) return;
+                  onClose();
+                }}
                 className="btn-ghost text-sm"
               >
                 Cancel

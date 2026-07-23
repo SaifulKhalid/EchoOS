@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileNav } from './MobileNav';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { ToastContainer } from '@/components/ui/Toast';
 import { useReminderChecker } from '@/hooks/useReminders';
 
 /**
@@ -26,6 +27,7 @@ export function AppLayout() {
         </main>
       </div>
       <MobileNav />
+      <ToastContainer />
     </div>
   );
 }

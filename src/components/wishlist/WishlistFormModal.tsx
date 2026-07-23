@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAddWishlistItem, useUpdateWishlistItem, useDeleteWishlistItem } from '@/hooks/useWishlist';
 import { MOODS, type MoodId } from '@/config/constants';
 import { IconSparkle } from '@/components/ui/icons';
+import { useToastStore } from '@/services/toastStore';
 import type { WishlistEntry } from '@/types';
 
 const CATEGORIES: { id: WishlistEntry['category']; label: string; icon: string }[] = [
@@ -34,14 +35,18 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
   const saving = addItem.isPending || updateItem.isPending;
   const deleting = deleteItem.isPending;
   const valid = title.trim().length > 0;
+  const hasContent = title.trim().length > 0 || note.trim().length > 0 || mood != null;
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+        onClose();
+      }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, hasContent]);
 
   const handleSave = useCallback(async () => {
     if (!valid) return;
@@ -55,18 +60,30 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
       tags: [] as string[],
     };
 
-    if (isEditing && entry) {
-      await updateItem.mutateAsync({ id: entry.id, data });
-    } else {
-      await addItem.mutateAsync(data);
+    try {
+      if (isEditing && entry) {
+        await updateItem.mutateAsync({ id: entry.id, data });
+        useToastStore.getState().success('Wishlist item updated');
+      } else {
+        await addItem.mutateAsync(data);
+        useToastStore.getState().success('Added to wishlist!');
+      }
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to save. Please check your connection and try again.');
     }
-    onClose();
   }, [valid, category, title, note, done, mood, isEditing, entry, addItem, updateItem, onClose]);
 
   const handleDelete = useCallback(async () => {
     if (!entry) return;
-    await deleteItem.mutateAsync(entry.id);
-    onClose();
+    if (!window.confirm(`Delete "${entry.title}"? This cannot be undone.`)) return;
+    try {
+      await deleteItem.mutateAsync(entry.id);
+      useToastStore.getState().success(`Deleted "${entry.title}"`);
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to delete. Please try again.');
+    }
   }, [entry, deleteItem, onClose]);
 
   return (
@@ -78,7 +95,10 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink-950/70 p-4 backdrop-blur-sm"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) {
+            if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+            onClose();
+          }
         }}
       >
         <motion.div
@@ -97,7 +117,10 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
               {isEditing ? 'Edit Wishlist Item' : 'Add to Wishlist'}
             </h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
               aria-label="Close dialog"
             >
@@ -110,7 +133,7 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
             <div className="space-y-4">
               {/* Category selector */}
               <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Category
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -122,7 +145,7 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
                       className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         category === cat.id
                           ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80'
+                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
                       }`}
                     >
                       <span>{cat.icon}</span>
@@ -134,10 +157,11 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
 
               {/* Title */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="wishlist-title" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Title *
                 </label>
                 <input
+                  id="wishlist-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -149,10 +173,11 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
 
               {/* Note */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="wishlist-note" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Note
                 </label>
                 <textarea
+                  id="wishlist-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Why do you want this? Any specific details?"
@@ -174,7 +199,7 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
 
               {/* Mood */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Mood
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -186,7 +211,7 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
                       className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         mood === m.id
                           ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80'
+                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
                       }`}
                     >
                       {m.label}
@@ -211,7 +236,10 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
               <div />
             )}
             <div className="flex gap-3">
-              <button onClick={onClose} className="btn-ghost text-sm">
+              <button onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }} className="btn-ghost text-sm">
                 Cancel
               </button>
               <button

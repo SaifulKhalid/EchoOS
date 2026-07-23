@@ -4,6 +4,7 @@ import { useAddTravel, useUpdateTravel, useDeleteTravel } from '@/hooks/useTrave
 import { MOODS, type MoodId } from '@/config/constants';
 import { StarRating } from '@/components/ui/StarRating';
 import { IconSparkle } from '@/components/ui/icons';
+import { useToastStore } from '@/services/toastStore';
 import { dateToInputValue, inputValueToMillis } from '@/utils/dates';
 import type { TravelEntry } from '@/types';
 
@@ -42,6 +43,7 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
   const saving = addTravel.isPending || updateTravel.isPending;
   const deleting = deleteTravel.isPending;
   const valid = destination.trim().length > 0;
+  const hasContent = destination.trim().length > 0 || budget.trim().length > 0 || rating > 0 || companions.trim().length > 0 || places.trim().length > 0 || favoriteMoments.trim().length > 0 || mood != null || notes.trim().length > 0 || favorite;
 
   // Auto-calculate duration from date range
   const durationDays = useMemo(() => {
@@ -56,11 +58,14 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
   // Close on Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+        onClose();
+      }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, hasContent]);
 
   const handleSave = useCallback(async () => {
     if (!valid) return;
@@ -90,12 +95,18 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
       tags: [] as string[],
     };
 
-    if (isEditing && entry) {
-      await updateTravel.mutateAsync({ id: entry.id, data });
-    } else {
-      await addTravel.mutateAsync(data);
+    try {
+      if (isEditing && entry) {
+        await updateTravel.mutateAsync({ id: entry.id, data });
+        useToastStore.getState().success('Trip updated');
+      } else {
+        await addTravel.mutateAsync(data);
+        useToastStore.getState().success('Trip logged!');
+      }
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to save. Please check your connection and try again.');
     }
-    onClose();
   }, [
     valid, destination, startDate, endDate, durationDays,
     budget, rating, companions, places, favoriteMoments,
@@ -104,8 +115,14 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
 
   const handleDelete = useCallback(async () => {
     if (!entry) return;
-    await deleteTravel.mutateAsync(entry.id);
-    onClose();
+    if (!window.confirm(`Delete the trip to "${entry.destination}"? This cannot be undone.`)) return;
+    try {
+      await deleteTravel.mutateAsync(entry.id);
+      useToastStore.getState().success(`Deleted trip to "${entry.destination}"`);
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to delete. Please try again.');
+    }
   }, [entry, deleteTravel, onClose]);
 
   return (
@@ -117,7 +134,10 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink-950/70 p-4 backdrop-blur-sm"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) {
+            if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+            onClose();
+          }
         }}
       >
         <motion.div
@@ -136,7 +156,10 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
               {isEditing ? 'Edit Trip' : 'Add Trip'}
             </h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
               aria-label="Close dialog"
             >
@@ -149,10 +172,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
             <div className="space-y-4">
               {/* Destination */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="travel-destination" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Destination *
                 </label>
                 <input
+                  id="travel-destination"
                   type="text"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
@@ -165,10 +189,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
               {/* Date range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                  <label htmlFor="travel-start-date" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                     Start Date
                   </label>
                   <input
+                    id="travel-start-date"
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
@@ -176,10 +201,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                  <label htmlFor="travel-end-date" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                     End Date
                   </label>
                   <input
+                    id="travel-end-date"
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
@@ -199,10 +225,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
               {/* Budget + Rating row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                  <label htmlFor="travel-budget" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                     Budget ($)
                   </label>
                   <input
+                    id="travel-budget"
                     type="number"
                     min={0}
                     value={budget}
@@ -212,7 +239,7 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                     Rating
                   </label>
                   <StarRating value={rating} onChange={setRating} size="2xl" />
@@ -221,10 +248,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
 
               {/* Companions */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="travel-companions" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Companions
                 </label>
                 <input
+                  id="travel-companions"
                   type="text"
                   value={companions}
                   onChange={(e) => setCompanions(e.target.value)}
@@ -235,10 +263,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
 
               {/* Places visited */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="travel-places" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Places Visited
                 </label>
                 <input
+                  id="travel-places"
                   type="text"
                   value={places}
                   onChange={(e) => setPlaces(e.target.value)}
@@ -249,10 +278,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
 
               {/* Favorite moments */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="travel-favorite-moments" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Favorite Moments
                 </label>
                 <input
+                  id="travel-favorite-moments"
                   type="text"
                   value={favoriteMoments}
                   onChange={(e) => setFavoriteMoments(e.target.value)}
@@ -263,7 +293,7 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
 
               {/* Mood */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Mood
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -275,7 +305,7 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
                       className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         mood === m.id
                           ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80'
+                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
                       }`}
                     >
                       {m.label}
@@ -286,10 +316,11 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
 
               {/* Notes */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="travel-notes" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Notes
                 </label>
                 <textarea
+                  id="travel-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="How was the trip?"
@@ -325,7 +356,10 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
               <div />
             )}
             <div className="flex gap-3">
-              <button onClick={onClose} className="btn-ghost text-sm">
+              <button onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }} className="btn-ghost text-sm">
                 Cancel
               </button>
               <button

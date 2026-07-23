@@ -56,7 +56,7 @@ export function TimelineItem({
               >
                 {meta.label}
               </span>
-              <span className="text-[10px] text-white/35">
+              <span className="text-[10px] text-white/55">
                 {formatDateShort(entry.date)}
               </span>
               {entry.done && (
@@ -71,7 +71,7 @@ export function TimelineItem({
 
             {/* Subtitle */}
             {entry.subtitle && (
-              <p className="mt-0.5 truncate text-xs text-white/45">
+              <p className="mt-0.5 truncate text-xs text-white/60">
                 {entry.subtitle}
               </p>
             )}
@@ -87,7 +87,7 @@ export function TimelineItem({
 
         {/* Preview text */}
         {entry.preview && (
-          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-white/40">
+          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-white/55">
             {entry.preview}
           </p>
         )}
@@ -95,7 +95,7 @@ export function TimelineItem({
         {/* Mood chip */}
         {entry.mood && (
           <div className="mt-1.5">
-            <span className="text-[10px] text-white/35">
+            <span className="text-[10px] text-white/55">
               {MOODS.find((m) => m.id === entry.mood)?.label}
             </span>
           </div>

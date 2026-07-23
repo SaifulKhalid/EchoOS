@@ -26,6 +26,7 @@ export function StarRating({
           <button
             key={star}
             type="button"
+            aria-label={`Rate ${star * 2} out of 10`}
             onClick={() => {
               if (interactive && onChange) {
                 onChange(value === star * 2 ? 0 : star * 2);

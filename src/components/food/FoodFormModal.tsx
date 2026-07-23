@@ -4,6 +4,7 @@ import { useAddFood, useUpdateFood, useDeleteFood } from '@/hooks/useFood';
 import { MOODS, type MoodId } from '@/config/constants';
 import { StarRating } from '@/components/ui/StarRating';
 import { IconSparkle } from '@/components/ui/icons';
+import { useToastStore } from '@/services/toastStore';
 import { dateToInputValue, todayInputValue, inputValueToMillis } from '@/utils/dates';
 import type { FoodEntry } from '@/types';
 
@@ -39,15 +40,19 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
   const saving = addFood.isPending || updateFood.isPending;
   const deleting = deleteFood.isPending;
   const valid = restaurant.trim().length > 0;
+  const hasContent = restaurant.trim().length > 0 || cuisine.trim().length > 0 || price.trim().length > 0 || rating > 0 || favoriteDishes.trim().length > 0 || mood != null || notes.trim().length > 0 || favorite;
 
   // Close on Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+        onClose();
+      }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, hasContent]);
 
   const handleSave = useCallback(async () => {
     if (!valid) return;
@@ -70,12 +75,18 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
       tags: [] as string[],
     };
 
-    if (isEditing && entry) {
-      await updateFood.mutateAsync({ id: entry.id, data });
-    } else {
-      await addFood.mutateAsync(data);
+    try {
+      if (isEditing && entry) {
+        await updateFood.mutateAsync({ id: entry.id, data });
+        useToastStore.getState().success('Entry updated');
+      } else {
+        await addFood.mutateAsync(data);
+        useToastStore.getState().success('Meal logged!');
+      }
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to save. Please check your connection and try again.');
     }
-    onClose();
   }, [
     valid, restaurant, cuisine, price, rating, favoriteDishes, date,
     mood, notes, favorite, isEditing, entry, addFood, updateFood, onClose,
@@ -83,8 +94,14 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
 
   const handleDelete = useCallback(async () => {
     if (!entry) return;
-    await deleteFood.mutateAsync(entry.id);
-    onClose();
+    if (!window.confirm(`Delete the entry for "${entry.restaurant}"? This cannot be undone.`)) return;
+    try {
+      await deleteFood.mutateAsync(entry.id);
+      useToastStore.getState().success(`Deleted "${entry.restaurant}"`);
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to delete. Please try again.');
+    }
   }, [entry, deleteFood, onClose]);
 
   return (
@@ -96,7 +113,10 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink-950/70 p-4 backdrop-blur-sm"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) {
+            if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+            onClose();
+          }
         }}
       >
         <motion.div
@@ -115,7 +135,10 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
               {isEditing ? 'Edit Entry' : 'Add Meal'}
             </h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
               aria-label="Close dialog"
             >
@@ -128,10 +151,11 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
             <div className="space-y-4">
               {/* Restaurant name */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="food-restaurant" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Restaurant *
                 </label>
                 <input
+                  id="food-restaurant"
                   type="text"
                   value={restaurant}
                   onChange={(e) => setRestaurant(e.target.value)}
@@ -144,10 +168,11 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
               {/* Cuisine + Price row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                  <label htmlFor="food-cuisine" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                     Cuisine
                   </label>
                   <input
+                    id="food-cuisine"
                     type="text"
                     value={cuisine}
                     onChange={(e) => setCuisine(e.target.value)}
@@ -156,10 +181,11 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                  <label htmlFor="food-price" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                     Price ($)
                   </label>
                   <input
+                    id="food-price"
                     type="number"
                     min={0}
                     step={0.5}
@@ -173,7 +199,7 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
 
               {/* Rating */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Rating
                 </label>
                 <StarRating value={rating} onChange={setRating} size="2xl" />
@@ -181,10 +207,11 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
 
               {/* Favorite dishes */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="food-favorite-dishes" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Favorite Dishes
                 </label>
                 <input
+                  id="food-favorite-dishes"
                   type="text"
                   value={favoriteDishes}
                   onChange={(e) => setFavoriteDishes(e.target.value)}
@@ -195,7 +222,7 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
 
               {/* Mood */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Mood
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -207,7 +234,7 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
                       className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         mood === m.id
                           ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80'
+                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
                       }`}
                     >
                       {m.label}
@@ -218,10 +245,11 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
 
               {/* Notes */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="food-notes" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Notes
                 </label>
                 <textarea
+                  id="food-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="How was the experience?"
@@ -232,10 +260,11 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
 
                 {/* Date */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="food-date" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Date
                 </label>
                 <input
+                  id="food-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -270,7 +299,10 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
               <div />
             )}
             <div className="flex gap-3">
-              <button onClick={onClose} className="btn-ghost text-sm">
+              <button onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }} className="btn-ghost text-sm">
                 Cancel
               </button>
               <button

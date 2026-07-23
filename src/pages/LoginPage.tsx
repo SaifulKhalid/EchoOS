@@ -118,7 +118,7 @@ export function LoginPage() {
           </button>
         </div>
 
-        <p className="mt-6 text-center text-xs text-white/35">
+        <p className="mt-6 text-center text-xs text-white/55">
           Guest data stays on this device’s account. Upgrade to Google later to keep it
           forever.
         </p>

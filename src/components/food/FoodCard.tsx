@@ -60,7 +60,7 @@ export function FoodCard({
             {entry.restaurant}
           </p>
           {entry.cuisine && (
-            <p className="truncate text-xs text-white/40">{entry.cuisine}</p>
+            <p className="truncate text-xs text-white/55">{entry.cuisine}</p>
           )}
         </div>
       </div>
@@ -81,13 +81,13 @@ export function FoodCard({
           {entry.favoriteDishes.slice(0, 2).map((dish) => (
             <span
               key={dish}
-              className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/45"
+              className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/60"
             >
               {dish}
             </span>
           ))}
           {entry.favoriteDishes.length > 2 && (
-            <span className="text-[10px] text-white/30">
+            <span className="text-[10px] text-white/55">
               +{entry.favoriteDishes.length - 2}
             </span>
           )}
@@ -97,12 +97,12 @@ export function FoodCard({
       {/* Bottom row: date + mood */}
       <div className="flex items-center justify-between gap-2">
         {entry.date && (
-          <p className="text-[11px] text-white/35">
+          <p className="text-[11px] text-white/55">
             {formatDateLong(entry.date)}
           </p>
         )}
         {entry.mood && (
-          <span className="shrink-0 text-[11px] text-white/40">
+          <span className="shrink-0 text-[11px] text-white/55">
             {MOODS.find((m) => m.id === entry.mood)?.label}
           </span>
         )}

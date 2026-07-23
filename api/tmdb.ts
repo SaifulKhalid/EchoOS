@@ -20,7 +20,15 @@ const TMDB_API = 'https://api.themoviedb.org/3';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── CORS headers ─────────────────────────────────────────
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'https://echo-os-two.vercel.app',
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
+    'http://localhost:5173',
+  ].filter(Boolean);
+  const origin = req.headers.origin ?? '';
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -32,6 +40,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Only GET is accepted.' });
     return;
+  }
+
+  // ── Rate limiting ────────────────────────────────────────
+  const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+  const RATE_LIMIT_MAX = 30; // max 30 TMDB requests per minute
+  const rateMap = new Map<string, number[]>();
+
+  function isRateLimited(uid: string): boolean {
+    const now = Date.now();
+    const windowStart = now - RATE_LIMIT_WINDOW_MS;
+    const timestamps = (rateMap.get(uid) ?? []).filter((t) => t > windowStart);
+    timestamps.push(now);
+    rateMap.set(uid, timestamps);
+    return timestamps.length > RATE_LIMIT_MAX;
   }
 
   // ── Verify Firebase ID token ─────────────────────────────
@@ -51,10 +73,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  let uid: string;
   try {
-    await adminAuth.verifyIdToken(authHeader.slice(7));
+    const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
+    uid = decoded.uid;
   } catch {
     res.status(401).json({ error: 'Invalid or expired Firebase ID token.' });
+    return;
+  }
+
+  if (isRateLimited(uid)) {
+    res.status(429).json({ error: 'Rate limit exceeded. Please wait before making another request.' });
     return;
   }
 

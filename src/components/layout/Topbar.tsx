@@ -57,7 +57,11 @@ export function Topbar() {
                 </p>
               </div>
               <button
-                onClick={() => signOut()}
+                onClick={() => {
+                  const isAnon = user?.isAnonymous;
+                  if (isAnon && !window.confirm('You are signed in as a guest. Signing out will permanently lose all your data unless you link a Google account first. Continue?')) return;
+                  signOut();
+                }}
                 className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
               >
                 <IconLogout width={17} height={17} />

@@ -128,7 +128,7 @@ export default function TimelinePage() {
 
       {/* Count */}
       {displayed.length > 0 && (
-        <p className="mb-4 text-xs text-white/35">
+        <p className="mb-4 text-xs text-white/55">
           {displayed.length} memory{displayed.length !== 1 ? 'ies' : ''}
           {displayed.length !== entries.length
             ? ` (filtered from ${entries.length})`
@@ -168,7 +168,7 @@ export default function TimelinePage() {
               {months.map((monthGroup) => (
                 <div key={`${year}-${monthGroup.month}`} className="mb-4">
                   {/* Month header */}
-                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-white/35">
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-white/55">
                     {new Date(Number(year), monthGroup.month).toLocaleDateString('en-US', { month: 'long' })}
                   </h3>
 

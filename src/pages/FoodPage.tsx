@@ -80,7 +80,7 @@ export default function FoodPage() {
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   sortBy === opt.key
                     ? 'bg-accent-gradient text-ink-950'
-                    : 'text-white/50 hover:text-white/80'
+                    : 'text-white/60 hover:text-white/80'
                 }`}
               >
                 {opt.label}
@@ -88,7 +88,7 @@ export default function FoodPage() {
             ))}
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-white/50 hover:text-white/70">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-white/60 hover:text-white/70">
             <input
               type="checkbox"
               checked={filterFavorites}
@@ -98,7 +98,7 @@ export default function FoodPage() {
             Favorites only
           </label>
 
-          <span className="ml-auto text-xs text-white/35">
+          <span className="ml-auto text-xs text-white/55">
             {displayed.length} meal{displayed.length !== 1 ? 's' : ''}
           </span>
         </div>

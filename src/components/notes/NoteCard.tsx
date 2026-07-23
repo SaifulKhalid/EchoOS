@@ -58,7 +58,7 @@ export function NoteCard({
           {TYPE_LABEL[entry.type] ?? entry.type}
         </span>
         {entry.date && (
-          <span className="text-[10px] text-white/35">
+          <span className="text-[10px] text-white/55">
             {formatDateShort(entry.date)}
           </span>
         )}
@@ -79,7 +79,7 @@ export function NoteCard({
       {/* Mood label */}
       {entry.mood && (
         <div className="mt-2">
-          <span className="text-[10px] text-white/35">
+          <span className="text-[10px] text-white/55">
             {MOODS.find((m) => m.id === entry.mood)?.label}
           </span>
         </div>

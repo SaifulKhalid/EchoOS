@@ -96,7 +96,7 @@ function BarItem({ label, count, max, color }: { label: string; count: number; m
     <div>
       <div className="mb-1 flex justify-between text-xs">
         <span className="text-white/70">{label}</span>
-        <span className="text-white/40">{count}</span>
+        <span className="text-white/55">{count}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-white/10">
         <motion.div
@@ -114,7 +114,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl bg-white/5 px-3 py-2.5">
       <p className="text-xs text-white/70">{value}</p>
-      <p className="mt-0.5 text-[10px] text-white/40">{label}</p>
+      <p className="mt-0.5 text-[10px] text-white/55">{label}</p>
     </div>
   );
 }
@@ -292,7 +292,7 @@ export default function DashboardPage() {
           {/* Recent Memories */}
           <Tile title="Recent Memories" className="lg:col-span-2">
             {recentEntries.length === 0 ? (
-              <div className="flex h-32 items-center justify-center text-xs text-white/30">
+              <div className="flex h-32 items-center justify-center text-xs text-white/55">
                 No memories yet. Start logging!
               </div>
             ) : (
@@ -310,7 +310,7 @@ export default function DashboardPage() {
                     {/* Content */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-white/80">{e.title}</p>
-                      <p className="truncate text-xs text-white/40">
+                      <p className="truncate text-xs text-white/55">
                         {e.subtitle ?? ''}
                         {e.subtitle && e.date ? ' · ' : ''}
                         {e.date ? formatDistanceToNow(e.date) : ''}
@@ -346,16 +346,16 @@ export default function DashboardPage() {
                       style={{ minHeight: m.count > 0 ? '4px' : '0' }}
                     />
                     {m.count > 0 && (
-                      <span className="text-[9px] text-white/40">{m.count}</span>
+                      <span className="text-[9px] text-white/55">{m.count}</span>
                     )}
-                    <span className="text-[9px] text-white/30">
+                    <span className="text-[9px] text-white/55">
                       {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][m.month]}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex h-32 items-center justify-center text-xs text-white/30">
+              <div className="flex h-32 items-center justify-center text-xs text-white/55">
                 No activity this year yet
               </div>
             )}

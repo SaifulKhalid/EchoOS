@@ -9,6 +9,10 @@ import { usePreferences, type AiPersona } from '@/hooks/usePreferences';
 import { useReminders, useAddReminder, useDeleteReminder } from '@/hooks/useReminders';
 import { upgradeGuestToGoogle, handleRedirectResult, signOut } from '@/firebase/auth';
 import { IconGoogle, IconClock, IconTrash } from '@/components/ui/icons';
+import { getDocs, collection, query, orderBy } from 'firebase/firestore';
+import { db, auth } from '@/firebase/config';
+import { deleteUser } from 'firebase/auth';
+import { API_BASE_URL } from '@/config/env';
 import { dateToInputValue, todayInputValue } from '@/utils/dates';
 import type { ReminderInterval } from '@/types';
 
@@ -104,7 +108,11 @@ export default function SettingsPage() {
           {msg && <p className="mt-3 text-xs text-white/60">{msg}</p>}
 
           <button
-            onClick={() => signOut()}
+            onClick={() => {
+              const isAnon = user?.isAnonymous;
+              if (isAnon && !window.confirm('You are signed in as a guest. Signing out will permanently lose all your data unless you link a Google account first. Continue?')) return;
+              signOut();
+            }}
             className="mt-4 text-sm text-white/50 underline-offset-4 hover:text-white/80 hover:underline"
           >
             Sign out
@@ -117,7 +125,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-white/80">Theme</p>
-              <p className="text-xs text-white/45">
+              <p className="text-xs text-white/60">
                 Currently {theme === 'dark' ? 'Dark' : 'Light'} mode
               </p>
             </div>
@@ -128,7 +136,7 @@ export default function SettingsPage() {
         {/* ── AI Persona ── */}
         <GlassCard>
           <h3 className="mb-4 text-sm font-medium text-white/70">AI Persona</h3>
-          <p className="mb-4 text-xs text-white/45">
+          <p className="mb-4 text-xs text-white/60">
             Choose how EchoOS talks to you in the chat.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -160,7 +168,7 @@ export default function SettingsPage() {
                     </motion.span>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-white/40">{PERSONA_DESCRIPTIONS[p]}</p>
+                <p className="mt-1 text-xs text-white/55">{PERSONA_DESCRIPTIONS[p]}</p>
               </button>
             ))}
           </div>
@@ -171,7 +179,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-medium text-white/70">Reminders</h3>
-              <p className="text-xs text-white/45 mt-0.5">
+              <p className="text-xs text-white/60 mt-0.5">
                 Get in-app notifications for your memory prompts.
               </p>
             </div>
@@ -192,7 +200,7 @@ export default function SettingsPage() {
               {/* Active reminders list */}
               <div className="mb-4 space-y-2">
                 {!reminders || reminders.length === 0 ? (
-                  <p className="text-xs text-white/35 py-2">
+                  <p className="text-xs text-white/55 py-2">
                     No reminders yet. Create one below.
                   </p>
                 ) : (
@@ -203,13 +211,13 @@ export default function SettingsPage() {
                     >
                       <div className="min-w-0">
                         <p className="text-sm text-white/80">{r.title}</p>
-                        <p className="text-xs text-white/40 truncate">
+                        <p className="text-xs text-white/55 truncate">
                           {r.message} · {r.interval} · {dateToInputValue(r.dueDate)}
                         </p>
                       </div>
                       <button
                         onClick={() => deleteReminder.mutate(r.id)}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/30 transition-colors hover:bg-mood-love/20 hover:text-mood-love"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/55 transition-colors hover:bg-mood-love/20 hover:text-mood-love"
                         aria-label="Delete reminder"
                       >
                         <IconTrash width={14} height={14} />
@@ -240,13 +248,13 @@ export default function SettingsPage() {
                       placeholder="Reminder title"
                       value={remTitle}
                       onChange={(e) => setRemTitle(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-accent/40"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-white/55 focus:border-accent/40"
                     />
                     <input
                       placeholder="Optional message"
                       value={remMsg}
                       onChange={(e) => setRemMsg(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-accent/40"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-white/55 focus:border-accent/40"
                     />
                     <div className="flex gap-3">
                       <input
@@ -305,14 +313,14 @@ export default function SettingsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm text-white/80">Install EchoOS</p>
-              <p className="text-xs text-white/45">
+              <p className="text-xs text-white/60">
                 Install as a standalone app for offline access and quick launching.
               </p>
             </div>
             <PwaStatus />
           </div>
 
-          <div className="mt-4 flex items-center gap-2 text-xs text-white/35">
+          <div className="mt-4 flex items-center gap-2 text-xs text-white/55">
             <span>Version 0.1.0</span>
             <span>·</span>
             <span>EchoOS</span>
@@ -324,7 +332,7 @@ export default function SettingsPage() {
         {/* ── Data ── */}
         <GlassCard>
           <h3 className="mb-4 text-sm font-medium text-white/70">Data</h3>
-          <p className="mb-4 text-xs text-white/45">
+          <p className="mb-4 text-xs text-white/60">
             Your data is stored securely in Firebase and synced across your devices.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -341,6 +349,84 @@ export default function SettingsPage() {
               className="rounded-xl border border-mood-love/20 bg-mood-love/10 px-4 py-2 text-xs text-mood-love transition-colors hover:bg-mood-love/20"
             >
               Clear local cache
+            </button>
+
+            {/* Export data */}
+            <button
+              onClick={async () => {
+                if (!user) { window.confirm('You must be signed in to export data.'); return; }
+                try {
+                  const cats = ['movies', 'food', 'travel', 'notes', 'wishlist', 'chats', 'reminders', 'notifications'] as const;
+                  const exportData: Record<string, unknown[]> = {};
+
+                  for (const cat of cats) {
+                    const q = query(collection(db, 'users', user.uid, cat), orderBy('createdAt', 'desc'));
+                    const snap = await getDocs(q);
+                    exportData[cat] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                  }
+
+                  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `echoos-export-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch {
+                  // Silently fail on export — user can retry
+                }
+              }}
+              className="rounded-xl border border-accent/20 bg-accent/10 px-4 py-2 text-xs text-accent-soft transition-colors hover:bg-accent/20"
+            >
+              Export all data (JSON)
+            </button>
+          </div>
+        </GlassCard>
+
+        {/* ── Danger Zone ── */}
+        <GlassCard className="border-mood-love/20">
+          <h3 className="mb-4 text-sm font-medium text-mood-love">Danger Zone</h3>
+          <p className="mb-4 text-xs text-white/60">
+            Deleting your account removes all your memories, preferences, and chat history permanently.
+            This cannot be undone.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={async () => {
+                if (!user) { window.confirm('You must be signed in to delete your account.'); return; }
+                if (!window.confirm('Delete your entire account? All memories, notes, and chat history will be permanently removed. This cannot be undone.')) return;
+
+                try {
+                  const token = await user.getIdToken();
+                  const base = API_BASE_URL || window.location.origin;
+
+                  const res = await fetch(`${base}/api/delete-account`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+
+                  if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    throw new Error(text || `Error ${res.status}`);
+                  }
+
+                  // Delete the Firebase Auth user after data is gone
+                  if (auth.currentUser) {
+                    await deleteUser(auth.currentUser).catch(() => {});
+                  }
+
+                  signOut();
+                } catch (e) {
+                  const msg = e instanceof Error ? e.message : 'An error occurred';
+                  window.confirm(`Failed to delete account: ${msg}. Please try again.`);
+                }
+              }}
+              className="rounded-xl border border-mood-love/20 bg-mood-love/10 px-4 py-2 text-xs text-mood-love transition-colors hover:bg-mood-love/20"
+            >
+              Delete my account and all data
             </button>
           </div>
         </GlassCard>

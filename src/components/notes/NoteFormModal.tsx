@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAddNote, useUpdateNote, useDeleteNote } from '@/hooks/useNotes';
 import { MOODS, type MoodId } from '@/config/constants';
 import { IconSparkle } from '@/components/ui/icons';
+import { useToastStore } from '@/services/toastStore';
 import { dateToInputValue, todayInputValue, inputValueToMillis } from '@/utils/dates';
 import type { NoteEntry } from '@/types';
 
@@ -33,14 +34,18 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
   const saving = addNote.isPending || updateNote.isPending;
   const deleting = deleteNote.isPending;
   const valid = text.trim().length > 0;
+  const hasContent = text.trim().length > 0 || title.trim().length > 0 || mood != null;
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+        onClose();
+      }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, hasContent]);
 
   const handleSave = useCallback(async () => {
     if (!valid) return;
@@ -54,18 +59,31 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
       tags: [] as string[],
     };
 
-    if (isEditing && entry) {
-      await updateNote.mutateAsync({ id: entry.id, data });
-    } else {
-      await addNote.mutateAsync(data);
+    try {
+      if (isEditing && entry) {
+        await updateNote.mutateAsync({ id: entry.id, data });
+        useToastStore.getState().success('Note updated');
+      } else {
+        await addNote.mutateAsync(data);
+        useToastStore.getState().success('Note saved!');
+      }
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to save. Please check your connection and try again.');
     }
-    onClose();
   }, [valid, type, title, text, date, mood, isEditing, entry, addNote, updateNote, onClose]);
 
   const handleDelete = useCallback(async () => {
     if (!entry) return;
-    await deleteNote.mutateAsync(entry.id);
-    onClose();
+    const label = entry.title ?? 'this note';
+    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
+    try {
+      await deleteNote.mutateAsync(entry.id);
+      useToastStore.getState().success(`Deleted "${label}"`);
+      onClose();
+    } catch {
+      useToastStore.getState().error('Failed to delete. Please try again.');
+    }
   }, [entry, deleteNote, onClose]);
 
   return (
@@ -77,7 +95,10 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-ink-950/70 p-4 backdrop-blur-sm"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) {
+            if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+            onClose();
+          }
         }}
       >
         <motion.div
@@ -96,7 +117,10 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
               {isEditing ? 'Edit Note' : 'New Note'}
             </h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
               aria-label="Close dialog"
             >
@@ -109,7 +133,7 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
             <div className="space-y-4">
               {/* Note type selector */}
               <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Type
                 </label>
                 <div className="flex gap-2">
@@ -137,10 +161,11 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
 
               {/* Title */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="note-title" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Title
                 </label>
                 <input
+                  id="note-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -152,10 +177,11 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
 
               {/* Text */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="note-text" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Note *
                 </label>
                 <textarea
+                  id="note-text"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder="What's on your mind?"
@@ -166,10 +192,11 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
 
               {/* Date */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label htmlFor="note-date" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Date
                 </label>
                 <input
+                  id="note-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -179,7 +206,7 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
 
               {/* Mood */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/50">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
                   Mood
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -191,7 +218,7 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
                       className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         mood === m.id
                           ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80'
+                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
                       }`}
                     >
                       {m.label}
@@ -216,7 +243,10 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
               <div />
             )}
             <div className="flex gap-3">
-              <button onClick={onClose} className="btn-ghost text-sm">
+              <button onClick={() => {
+                if (hasContent && !window.confirm('Discard unsaved changes?')) return;
+                onClose();
+              }} className="btn-ghost text-sm">
                 Cancel
               </button>
               <button

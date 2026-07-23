@@ -108,7 +108,7 @@ export default function NotesPage() {
             ))}
           </div>
 
-          <span className="ml-auto text-xs text-white/35">
+          <span className="ml-auto text-xs text-white/55">
             {displayed.length} note{displayed.length !== 1 ? 's' : ''}
           </span>
         </div>

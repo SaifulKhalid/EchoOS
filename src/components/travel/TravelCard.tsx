@@ -57,7 +57,7 @@ export function TravelCard({
           <p className="truncate text-sm font-medium text-white/90 group-hover:text-white">
             {entry.destination}
           </p>
-          <p className="truncate text-xs text-white/40">
+          <p className="truncate text-xs text-white/55">
             {formatDateRange(entry.startDate, entry.endDate)}
             {entry.durationDays ? ` · ${entry.durationDays} day${entry.durationDays !== 1 ? 's' : ''}` : ''}
           </p>
@@ -80,13 +80,13 @@ export function TravelCard({
           {entry.companions.slice(0, 3).map((name) => (
             <span
               key={name}
-              className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/45"
+              className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/60"
             >
               {name}
             </span>
           ))}
           {entry.companions.length > 3 && (
-            <span className="text-[10px] text-white/30">
+            <span className="text-[10px] text-white/55">
               +{entry.companions.length - 3}
             </span>
           )}
@@ -95,7 +95,7 @@ export function TravelCard({
 
       {/* Places visited */}
       {entry.places && entry.places.length > 0 && (
-        <p className="truncate text-[11px] text-white/30">
+        <p className="truncate text-[11px] text-white/55">
           {entry.places.slice(0, 2).join(' · ')}
           {entry.places.length > 2 ? ' …' : ''}
         </p>
@@ -104,7 +104,7 @@ export function TravelCard({
       {/* Bottom: mood */}
       {entry.mood && (
         <div className="mt-2 flex items-center gap-2">
-          <span className="text-[11px] text-white/40">
+          <span className="text-[11px] text-white/55">
             {MOODS.find((m) => m.id === entry.mood)?.label}
           </span>
         </div>

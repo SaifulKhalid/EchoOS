@@ -75,7 +75,7 @@ export function NotificationBell() {
               {!notifications || notifications.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                   <IconBell width={24} height={24} className="text-white/20" />
-                  <p className="text-sm text-white/35">No notifications yet</p>
+                  <p className="text-sm text-white/55">No notifications yet</p>
                 </div>
               ) : (
                 notifications.map((n) => {
@@ -109,10 +109,10 @@ export function NotificationBell() {
                             </span>
                           )}
                         </div>
-                        <p className="mt-0.5 line-clamp-2 text-xs text-white/45">
+                        <p className="mt-0.5 line-clamp-2 text-xs text-white/60">
                           {n.message}
                         </p>
-                        <p className="mt-1 text-[10px] text-white/30">{time}</p>
+                        <p className="mt-1 text-[10px] text-white/55">{time}</p>
                       </div>
 
                       {/* Actions */}
@@ -120,7 +120,7 @@ export function NotificationBell() {
                         {!n.read && (
                           <button
                             onClick={() => markRead.mutate(n.id)}
-                            className="flex h-6 w-6 items-center justify-center rounded-md text-white/40 hover:bg-white/10 hover:text-white/80"
+                            className="flex h-6 w-6 items-center justify-center rounded-md text-white/55 hover:bg-white/10 hover:text-white/80"
                             aria-label="Mark as read"
                           >
                             <IconCheckCircle width={13} height={13} />
@@ -128,7 +128,7 @@ export function NotificationBell() {
                         )}
                         <button
                           onClick={() => deleteNotif.mutate(n.id)}
-                          className="flex h-6 w-6 items-center justify-center rounded-md text-white/40 hover:bg-mood-love/20 hover:text-mood-love"
+                          className="flex h-6 w-6 items-center justify-center rounded-md text-white/55 hover:bg-mood-love/20 hover:text-mood-love"
                           aria-label="Dismiss"
                         >
                           <IconX width={13} height={13} />

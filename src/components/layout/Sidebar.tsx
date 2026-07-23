@@ -46,7 +46,7 @@ function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
   return (
     <div className="space-y-1">
       {title && (
-        <p className="px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wider text-white/35">
+        <p className="px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wider text-white/55">
           {title}
         </p>
       )}

@@ -78,10 +78,10 @@ export function ChatMessage({
               </div>
             )}
 
-            {/* Confidence meter */}
+            {/* AI self-assessment indicator */}
             {message.confidence != null && (
               <div className="flex items-center gap-2 px-1">
-                <span className="text-[10px] text-white/35">Confidence</span>
+                <span className="text-[10px] text-white/55">Self-assessment</span>
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                   <motion.div
                     initial={{ width: 0 }}
@@ -96,7 +96,7 @@ export function ChatMessage({
                     }`}
                   />
                 </div>
-                <span className="text-[10px] text-white/45">
+                <span className="text-[10px] text-white/60">
                   {Math.round(message.confidence * 100)}%
                 </span>
               </div>

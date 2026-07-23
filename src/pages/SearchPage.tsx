@@ -57,7 +57,7 @@ export default function SearchPage() {
         <IconSearch
           width={18}
           height={18}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/55"
         />
         <input
           autoFocus
@@ -69,7 +69,7 @@ export default function SearchPage() {
         {filters.query && (
           <button
             onClick={() => setQuery('')}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/55 hover:text-white/70 transition-colors"
             aria-label="Clear search"
           >
             <IconX width={16} height={16} />
@@ -107,7 +107,7 @@ export default function SearchPage() {
 
         {/* Rating + Date filters */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] text-white/40">Rating:</span>
+          <span className="text-[11px] text-white/55">Rating:</span>
           {RATING_OPTIONS.map((r) => (
             <FilterPill
               key={r ?? 'any'}
@@ -118,7 +118,7 @@ export default function SearchPage() {
             </FilterPill>
           ))}
 
-          <span className="ml-2 text-[11px] text-white/40">From:</span>
+          <span className="ml-2 text-[11px] text-white/55">From:</span>
           <input
             type="date"
             value={filters.dateFrom ? new Date(filters.dateFrom).toISOString().split('T')[0] : ''}
@@ -130,7 +130,7 @@ export default function SearchPage() {
             className="w-32 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none focus:border-accent/40"
           />
 
-          <span className="text-[11px] text-white/40">To:</span>
+          <span className="text-[11px] text-white/55">To:</span>
           <input
             type="date"
             value={filters.dateTo ? new Date(filters.dateTo).toISOString().split('T')[0] : ''}
@@ -162,7 +162,7 @@ export default function SearchPage() {
         </div>
       ) : hasActiveFilters && results.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-white/30">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-white/55">
             <IconSearch width={24} height={24} />
           </div>
           <p className="text-sm text-white/50">No results match your search criteria.</p>
@@ -175,7 +175,7 @@ export default function SearchPage() {
         </div>
       ) : results.length > 0 ? (
         <div className="space-y-2">
-          <p className="mb-3 text-xs text-white/40">
+          <p className="mb-3 text-xs text-white/55">
             {results.length} result{results.length !== 1 ? 's' : ''}
             {hasActiveFilters && filters.query && ` for "${filters.query}"`}
           </p>
@@ -196,13 +196,13 @@ export default function SearchPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-medium text-white/80">{entry.title}</p>
-                    <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-[1px] text-[9px] text-white/40">
+                    <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-[1px] text-[9px] text-white/55">
                       {CAT_LABEL[entry.type] ?? entry.type}
                     </span>
                   </div>
 
                   {entry.subtitle && (
-                    <p className="mt-0.5 truncate text-xs text-white/45">{entry.subtitle}</p>
+                    <p className="mt-0.5 truncate text-xs text-white/60">{entry.subtitle}</p>
                   )}
 
                   {/* Match snippet */}
@@ -212,7 +212,7 @@ export default function SearchPage() {
                     </p>
                   )}
 
-                  <div className="mt-1 flex items-center gap-3 text-[11px] text-white/30">
+                  <div className="mt-1 flex items-center gap-3 text-[11px] text-white/55">
                     {entry.date > 0 && <span>{formatDateLong(entry.date)}</span>}
                     {entry.rating != null && (
                       <span className="text-mood-joy">{entry.rating}/10</span>
@@ -228,7 +228,7 @@ export default function SearchPage() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-white/30">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-white/55">
             <IconSearch width={24} height={24} />
           </div>
           <p className="text-sm text-white/50">

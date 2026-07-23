@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
                     <div key={g.name}>
                       <div className="mb-1 flex justify-between text-xs">
                         <span className="text-white/70">{g.name}</span>
-                        <span className="text-white/40">{g.count}</span>
+                        <span className="text-white/55">{g.count}</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-white/10">
                         <motion.div
@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
                     <div key={m.id}>
                       <div className="mb-1 flex justify-between text-xs">
                         <span className="text-white/70">{moodMeta?.label ?? m.id}</span>
-                        <span className="text-white/40">
+                        <span className="text-white/55">
                           {Math.round(pct)}% ({m.count})
                         </span>
                       </div>
@@ -164,7 +164,7 @@ export default function AnalyticsPage() {
                     <div key={c.name}>
                       <div className="mb-1 flex justify-between text-xs">
                         <span className="text-white/70">{c.name}</span>
-                        <span className="text-white/40">{c.count}</span>
+                        <span className="text-white/55">{c.count}</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-white/10">
                         <motion.div
@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
                     <div key={l.name}>
                       <div className="mb-1 flex justify-between text-xs">
                         <span className="text-white/70">{l.name}</span>
-                        <span className="text-white/40">{l.count}</span>
+                        <span className="text-white/55">{l.count}</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-white/10">
                         <motion.div
@@ -227,9 +227,9 @@ export default function AnalyticsPage() {
                     style={{ minHeight: m.count > 0 ? '4px' : '0' }}
                   />
                   {m.count > 0 && (
-                    <span className="text-[9px] text-white/40">{m.count}</span>
+                    <span className="text-[9px] text-white/55">{m.count}</span>
                   )}
-                  <span className="text-[9px] text-white/30">
+                  <span className="text-[9px] text-white/55">
                     {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][m.month]}
                   </span>
                 </div>
@@ -318,7 +318,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
       <p className="text-white/70">{value}</p>
-      <p className="mt-0.5 text-white/40">{label}</p>
+      <p className="mt-0.5 text-white/55">{label}</p>
     </div>
   );
 }

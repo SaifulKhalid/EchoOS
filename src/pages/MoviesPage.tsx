@@ -72,7 +72,7 @@ export default function MoviesPage() {
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   sortBy === opt.key
                     ? 'bg-accent-gradient text-ink-950'
-                    : 'text-white/50 hover:text-white/80'
+                    : 'text-white/60 hover:text-white/80'
                 }`}
               >
                 {opt.label}
@@ -80,7 +80,7 @@ export default function MoviesPage() {
             ))}
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-white/50 hover:text-white/70">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-white/60 hover:text-white/70">
             <input
               type="checkbox"
               checked={filterFavorites}
@@ -91,7 +91,7 @@ export default function MoviesPage() {
           </label>
 
           {displayed.length > 0 && (
-            <span className="ml-auto text-xs text-white/35">
+            <span className="ml-auto text-xs text-white/55">
               {displayed.length} movie{displayed.length !== 1 ? 's' : ''}
             </span>
           )}
@@ -197,7 +197,7 @@ function MovieCard({
             {movie.rating && ` · ${movie.rating}/10`}
           </p>
           {movie.genres && movie.genres.length > 0 && (
-            <p className="mt-1 truncate text-[10px] uppercase tracking-wider text-white/40">
+            <p className="mt-1 truncate text-[10px] uppercase tracking-wider text-white/55">
               {movie.genres.slice(0, 2).join(' · ')}
             </p>
           )}
