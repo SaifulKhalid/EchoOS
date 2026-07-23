@@ -29,7 +29,7 @@ describe('useToastStore', () => {
     });
 
     it('uses default duration of 4000ms', () => {
-      const id = useToastStore.getState().addToast({
+      useToastStore.getState().addToast({
         message: 'Auto-dismiss',
         variant: 'success',
       });
