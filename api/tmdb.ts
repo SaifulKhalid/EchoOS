@@ -14,7 +14,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { auth } from './_lib/firebase.js';
+import { getAdminAuth } from './_lib/firebase.js';
 
 const TMDB_API = 'https://api.themoviedb.org/3';
 
@@ -41,8 +41,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  let adminAuth;
   try {
-    await auth.verifyIdToken(authHeader.slice(7));
+    adminAuth = getAdminAuth();
+  } catch (initErr) {
+    const message = initErr instanceof Error ? initErr.message : String(initErr);
+    console.error('Firebase Admin init failed:', message);
+    res.status(500).json({ error: `Search service unavailable: ${message}` });
+    return;
+  }
+
+  try {
+    await adminAuth.verifyIdToken(authHeader.slice(7));
   } catch {
     res.status(401).json({ error: 'Invalid or expired Firebase ID token.' });
     return;
