@@ -104,7 +104,8 @@ export function TravelFormModal({ entry, onClose }: TravelFormModalProps) {
         useToastStore.getState().success('Trip logged!');
       }
       onClose();
-    } catch {
+    } catch (err) {
+      console.error('[TravelFormModal] save failed:', err);
       useToastStore.getState().error('Failed to save. Please check your connection and try again.');
     }
   }, [

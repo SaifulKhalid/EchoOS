@@ -84,7 +84,8 @@ export function FoodFormModal({ entry, onClose }: FoodFormModalProps) {
         useToastStore.getState().success('Meal logged!');
       }
       onClose();
-    } catch {
+    } catch (err) {
+      console.error('[FoodFormModal] save failed:', err);
       useToastStore.getState().error('Failed to save. Please check your connection and try again.');
     }
   }, [
