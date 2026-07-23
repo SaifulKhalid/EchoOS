@@ -263,23 +263,23 @@ function parseInlineMetadata(content: string): MetadataPayload {
   const suggestions: string[] = [];
 
   if (words.some((w) => ['movie', 'film', 'watch', 'genre'].includes(w))) {
-    suggestions.push('What movies do I watch most?');
+    suggestions.push('What patterns do you see in my movie taste?');
   }
   if (words.some((w) => ['restaurant', 'food', 'meal', 'cuisine'].includes(w))) {
-    suggestions.push('Summarize my food ratings');
+    suggestions.push('What do my food ratings reveal?');
   }
   if (words.some((w) => ['travel', 'trip', 'visit', 'destination'].includes(w))) {
-    suggestions.push('Where have I traveled this year?');
+    suggestions.push('Tell me something about my travel habits');
   }
   if (words.some((w) => ['note', 'journal', 'thought'].includes(w))) {
-    suggestions.push('Show me my recent notes');
+    suggestions.push('What themes do my notes share?');
   }
   if (words.some((w) => ['wishlist', 'want', 'bucket'].includes(w))) {
-    suggestions.push("What's on my wishlist?");
+    suggestions.push("What does my wishlist say about me?");
   }
 
   if (suggestions.length === 0) {
-    suggestions.push('What are my top memories?', 'Show my recent activity');
+    suggestions.push('What patterns do you notice in my memories?', 'Compare my habits across categories');
   }
 
   return {

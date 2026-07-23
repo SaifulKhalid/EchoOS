@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { IconSparkle } from '@/components/ui/icons';
+import { IconSparkle, IconBulb, IconChart } from '@/components/ui/icons';
 import type { ChatMessage as ChatMessageType } from '@/types';
 
 /**
  * Renders a single chat message. User messages on the right, AI responses
- * on the left with an optional collapsible reasoning panel, confidence
+ * on the left with memory evidence, reasoning (How I Know This), confidence
  * meter, and clickable suggestion chips.
  */
 export function ChatMessage({
@@ -20,6 +20,17 @@ export function ChatMessage({
 }) {
   const isUser = message.role === 'user';
   const [showReasoning, setShowReasoning] = useState(false);
+
+  const confidenceLabel =
+    message.confidence != null
+      ? message.confidence > 0.8
+        ? 'High confidence'
+        : message.confidence > 0.5
+          ? 'Moderate confidence'
+          : message.confidence > 0.2
+            ? 'Low confidence'
+            : 'Very low confidence'
+      : null;
 
   return (
     <motion.div
@@ -58,14 +69,30 @@ export function ChatMessage({
               </div>
             </GlassCard>
 
-            {/* Reasoning panel */}
+            {/* Memory Evidence badge */}
+            {message.referencedMemoryIds && message.referencedMemoryIds.length > 0 && (
+              <div className="flex items-center gap-2 px-1">
+                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-accent/10 text-accent-soft">
+                  <IconBulb width={10} height={10} />
+                </div>
+                <span className="text-[10px] text-white/55">
+                  Referenced {message.referencedMemoryIds.length} memory
+                  {message.referencedMemoryIds.length > 1 ? 'ies' : 'y'}
+                </span>
+              </div>
+            )}
+
+            {/* "How I Know This" reasoning panel */}
             {message.reasoning && (
               <div className="glass rounded-xl border border-accent/15">
                 <button
                   onClick={() => setShowReasoning(!showReasoning)}
                   className="flex w-full items-center justify-between px-4 py-2 text-xs text-white/50 transition-colors hover:text-white/70"
                 >
-                  <span>Reasoning</span>
+                  <span className="flex items-center gap-1.5">
+                    <IconChart width={12} height={12} />
+                    How I know this
+                  </span>
                   <span className={`transition-transform ${showReasoning ? 'rotate-180' : ''}`}>
                     ▼
                   </span>
@@ -78,10 +105,10 @@ export function ChatMessage({
               </div>
             )}
 
-            {/* AI self-assessment indicator */}
+            {/* Confidence indicator with label */}
             {message.confidence != null && (
               <div className="flex items-center gap-2 px-1">
-                <span className="text-[10px] text-white/55">Self-assessment</span>
+                <span className="text-[10px] text-white/55">{confidenceLabel}</span>
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                   <motion.div
                     initial={{ width: 0 }}
@@ -92,7 +119,9 @@ export function ChatMessage({
                         ? 'bg-mood-joy'
                         : message.confidence > 0.5
                           ? 'bg-accent-soft'
-                          : 'bg-white/30'
+                          : message.confidence > 0.2
+                            ? 'bg-mood-calm'
+                            : 'bg-white/30'
                     }`}
                   />
                 </div>

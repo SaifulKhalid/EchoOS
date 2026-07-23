@@ -37,3 +37,6 @@ firestore-debug.log
 logs
 *.log
 npm-debug.log*
+
+.vercel
+.env*

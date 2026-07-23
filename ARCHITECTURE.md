@@ -1022,6 +1022,21 @@ expect(useToastStore.getState().toasts).toHaveLength(0);
 
 ---
 
+## Deployment
+
+### Auto-deploy to Vercel
+
+This project is connected to Vercel via Git. **Every push to `master` automatically triggers a production deployment.**
+
+- **Production:** Any commit pushed to `master` is built and deployed to the production URL
+- **Preview:** Pull request branches automatically get preview deployments with unique URLs
+- **Environment variables:** Set in Vercel dashboard — never committed to the repo
+
+> [!NOTE]
+> There is no manual deploy step. Simply `git push` and Vercel handles the rest. Check the deploy status in your Vercel dashboard or GitHub Actions.
+
+---
+
 ## 14. Future Architecture Considerations
 
 ### Priority 1: Scalability

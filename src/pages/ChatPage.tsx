@@ -21,11 +21,13 @@ import {
 import type { ChatMessage as ChatMessageType } from '@/types';
 
 const WELCOME_SUGGESTIONS = [
-  'What movies did I watch this year?',
-  'Which restaurants have I rated highest?',
-  'Summarize my travel this year',
-  'What genres do I watch most?',
+  'What patterns do you see in my movie taste?',
+  'Tell me something about myself I might have missed',
+  'What do my ratings say about my preferences?',
+  'Compare my habits from last year to this year',
 ];
+
+const EMPTY_STATE_TAGLINE = 'Ask anything about your movies, meals, trips, notes, and wishlist. EchoOS answers from your own memories — not the internet.';
 
 /**
  * AI Chat page — a streaming conversational interface wired to the
@@ -184,7 +186,7 @@ export default function ChatPage() {
     <>
       <PageHeader
         title="AI Chat"
-        subtitle="Ask about your own life — answers come from your memories."
+        subtitle="Your private AI Memory Operating System — answers come from your life."
       />
 
       {/* Chat area */}
@@ -212,8 +214,7 @@ export default function ChatPage() {
                 Your memory intelligence
               </h2>
               <p className="mt-2 max-w-md text-sm text-white/50">
-                Ask anything about your movies, meals, trips, notes, and wishlist.
-                EchoOS answers from your own memories.
+                {EMPTY_STATE_TAGLINE}
               </p>
 
               {/* Suggestion chips */}

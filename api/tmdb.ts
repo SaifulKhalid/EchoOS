@@ -18,6 +18,24 @@ import { getAdminAuth } from './_lib/firebase.js';
 
 const TMDB_API = 'https://api.themoviedb.org/3';
 
+// ── Rate limiting ────────────────────────────────────────────
+// Module-level map persists across invocations within the same
+// serverless instance. NOTE: This is still best-effort across
+// concurrent Vercel instances; for production hardening, replace
+// with Vercel KV or a Firestore counter.
+const TMDB_RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const TMDB_RATE_LIMIT_MAX = 30; // max 30 TMDB requests per minute
+const tmdbRateMap = new Map<string, number[]>();
+
+function isTmdbRateLimited(uid: string): boolean {
+  const now = Date.now();
+  const windowStart = now - TMDB_RATE_LIMIT_WINDOW_MS;
+  const timestamps = (tmdbRateMap.get(uid) ?? []).filter((t) => t > windowStart);
+  timestamps.push(now);
+  tmdbRateMap.set(uid, timestamps);
+  return timestamps.length > TMDB_RATE_LIMIT_MAX;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── CORS headers ─────────────────────────────────────────
   const allowedOrigins = [
@@ -40,20 +58,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Only GET is accepted.' });
     return;
-  }
-
-  // ── Rate limiting ────────────────────────────────────────
-  const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-  const RATE_LIMIT_MAX = 30; // max 30 TMDB requests per minute
-  const rateMap = new Map<string, number[]>();
-
-  function isRateLimited(uid: string): boolean {
-    const now = Date.now();
-    const windowStart = now - RATE_LIMIT_WINDOW_MS;
-    const timestamps = (rateMap.get(uid) ?? []).filter((t) => t > windowStart);
-    timestamps.push(now);
-    rateMap.set(uid, timestamps);
-    return timestamps.length > RATE_LIMIT_MAX;
   }
 
   // ── Verify Firebase ID token ─────────────────────────────
@@ -82,7 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  if (isRateLimited(uid)) {
+  if (isTmdbRateLimited(uid)) {
     res.status(429).json({ error: 'Rate limit exceeded. Please wait before making another request.' });
     return;
   }

@@ -48,8 +48,7 @@ const SUBCOLLECTIONS = [
  * subcollections) to avoid orphaned data.
  */
 async function deleteCollection(uid: string, collectionName: string): Promise<number> {
-  const db = getFirestore();
-  const collectionRef = db.collection('users', uid, collectionName);
+  const db = getFirestore();    const collectionRef = db.collection(`users/${uid}/${collectionName}`);
   let count = 0;
 
   try {
