@@ -36,7 +36,17 @@ interface Message {
 }
 
 interface GroqChunk {
-  choices?: { delta: { content?: string }; finish_reason?: string | null }[];
+  choices?: {
+    delta: {
+      content?: string;
+      tool_calls?: {
+        index: number;
+        id?: string;
+        function?: { name?: string; arguments?: string };
+      }[];
+    };
+    finish_reason?: string | null;
+  }[];
 }
 
 interface MetadataPayload {
@@ -126,7 +136,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ── Parse body ────────────────────────────────────────────
-  const { messages, model } = req.body as { messages?: Message[]; model?: string };
+  const { messages, model, tools, tool_choice } = req.body as {
+    messages?: Message[];
+    model?: string;
+    tools?: unknown[];
+    tool_choice?: unknown;
+  };
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: '`messages` array is required and must be non-empty.' });
@@ -143,19 +158,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // ── Stream the answer from Groq ──────────────────────────
+    const groqBody: Record<string, unknown> = {
+      model: selectedModel,
+      messages,
+      stream: true,
+      temperature: 0.7,
+      max_tokens: 2048,
+    };
+    // Forward tool definitions if present (enables function calling).
+    if (tools && Array.isArray(tools) && tools.length > 0) {
+      groqBody.tools = tools;
+      groqBody.tool_choice = tool_choice ?? 'auto';
+    }
+
     const groqRes = await fetch(GROQ_API, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages,
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 2048,
-      }),
+      body: JSON.stringify(groqBody),
     });
 
     if (!groqRes.ok) {
@@ -192,10 +214,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         try {
           const chunk = JSON.parse(payload) as GroqChunk;
-          const delta = chunk.choices?.[0]?.delta?.content;
+          const choice = chunk.choices?.[0];
+          const delta = choice?.delta?.content;
           if (delta) {
             fullContent += delta;
             writeSSE(res, { content: delta });
+          }
+
+          // Forward tool-call fragments to the client for accumulation.
+          const toolDeltas = choice?.delta?.tool_calls;
+          if (toolDeltas) {
+            writeSSE(res, { tool_calls: toolDeltas });
+          }
+
+          // Forward finish_reason so the client knows if tools need executing.
+          const reason = choice?.finish_reason;
+          if (reason) {
+            writeSSE(res, { finish_reason: reason });
           }
         } catch {
           // Skip malformed chunks
@@ -204,8 +239,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Send inline metadata (no second LLM call) ────────────
-    const meta = parseInlineMetadata(fullContent);
-    writeSSE(res, meta);
+    // Only parse metadata when there's actual text content (not when
+    // the model only emitted tool_calls).
+    if (fullContent) {
+      const meta = parseInlineMetadata(fullContent);
+      writeSSE(res, meta);
+    }
     writeSSEDone(res);
   } catch (err) {
     console.error('Chat error:', err);

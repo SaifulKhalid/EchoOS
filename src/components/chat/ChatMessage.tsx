@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { IconSparkle, IconBulb, IconChart } from '@/components/ui/icons';
+import { ActionCardRow } from './ActionCard';
 import type { ChatMessage as ChatMessageType } from '@/types';
 
 /**
@@ -62,6 +63,13 @@ export function ChatMessage({
                   </span>
                 )}
               </div>
+
+              {/* AI Action cards (addMovie, logTravel, …) */}
+              {message.actions && message.actions.length > 0 && (
+                <div className="-mx-1 mb-2">
+                  <ActionCardRow actions={message.actions} />
+                </div>
+              )}
 
               <div className="text-sm leading-relaxed text-white/90 whitespace-pre-wrap">
                 {message.content}

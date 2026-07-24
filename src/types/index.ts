@@ -1,7 +1,9 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { MemoryCategory, MoodId } from '@/config/constants';
+import type { ActionDescriptor } from '@/services/tools/types';
 
 export type { MemoryCategory, MoodId };
+export type { ActionDescriptor };
 
 /**
  * Core domain types for EchoOS.
@@ -129,6 +131,8 @@ export interface ChatMessage {
   confidence?: number; // 0–1
   suggestionChips?: string[];
   reasoning?: string;
+  /** AI Actions performed for this message (addMovie, logTravel, …). */
+  actions?: ActionDescriptor[];
 }
 
 // ── Notifications ──────────────────────────────────────────────

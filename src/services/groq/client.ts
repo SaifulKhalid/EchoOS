@@ -24,13 +24,26 @@ import {
   generateWelcomeChips,
   type ProcessedResponse,
 } from '@/memory';
+import { ToolCallAccumulator } from '@/services/tools/parseTools';
+import type { ToolSchema, ToolCall } from '@/services/tools/types';
 
 // ── Types ───────────────────────────────────────────────────
 
 export interface ChatRequest {
-  messages: { role: 'system' | 'user' | 'assistant'; content: string }[];
+  messages: { role: 'system' | 'user' | 'assistant' | 'tool'; content: string; tool_call_id?: string; name?: string }[];
   model?: string;
   stream?: boolean;
+  /** Optional tool definitions forwarded to Groq for function calling. */
+  tools?: ToolSchema[];
+  /** 'auto' (default) | 'none' | specific tool name. */
+  tool_choice?: 'auto' | 'none' | string;
+}
+
+/** A single tool-call delta as forwarded by the proxy. */
+export interface ForwardedToolCallDelta {
+  index: number;
+  id?: string;
+  function?: { name?: string; arguments?: string };
 }
 
 export interface StreamEvent {
@@ -41,6 +54,13 @@ export interface StreamEvent {
   confidence?: number;
   referencedMemoryIds?: string[];
   suggestionChips?: string[];
+  /**
+   * Forwarded tool-call delta (when the proxy passes through Groq's
+   * `choices[0].delta.tool_calls`). Present only in tool-calling turns.
+   */
+  tool_calls?: ForwardedToolCallDelta[];
+  /** Why the stream stopped — 'tool_calls' means tools need executing. */
+  finish_reason?: string;
 }
 
 // ── Re-export MemoryBundle for backward compatibility ───────
@@ -103,14 +123,16 @@ function getPipeline(): MemoryPipeline {
  * Returns the complete response text when done.
  *
  * This is the low-level transport function. For the full intelligence
- * pipeline, use `streamChatWithPipeline` instead.
+ * pipeline, use `streamChatWithPipeline` instead. For tool calling,
+ * use `streamChatWithTools` (which builds on this).
  */
 export async function streamChat(
-  messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+  messages: { role: 'system' | 'user' | 'assistant' | 'tool'; content: string; tool_call_id?: string; name?: string }[],
   onDelta: (text: string) => void,
   onMetadata?: (meta: Partial<StreamEvent>) => void,
   model: string = GROQ_MODELS.reasoning,
   _persona?: AiPersona,
+  options?: { tools?: ToolSchema[]; tool_choice?: 'auto' | 'none' | string },
 ): Promise<string> {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('You must be signed in to chat.');
@@ -119,17 +141,23 @@ export async function streamChat(
   const url = new URL(`${base}/api/chat`);
   url.searchParams.set('stream', '1');
 
+  const body: ChatRequest = {
+    messages,
+    model,
+    stream: true,
+  };
+  if (options?.tools && options.tools.length > 0) {
+    body.tools = options.tools;
+    body.tool_choice = options.tool_choice ?? 'auto';
+  }
+
   const res = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      messages,
-      model,
-      stream: true,
-    } satisfies ChatRequest),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -178,6 +206,15 @@ export async function streamChat(
               suggestionChips: parsed.suggestionChips,
             });
           }
+
+          // Forward tool-call deltas + finish_reason so callers can run the
+          // agentic loop via the same streamChat transport.
+          if (parsed.tool_calls || parsed.finish_reason) {
+            onMetadata?.({
+              tool_calls: parsed.tool_calls,
+              finish_reason: parsed.finish_reason,
+            });
+          }
         } catch {
           // Skip malformed JSON chunks
         }
@@ -188,6 +225,84 @@ export async function streamChat(
   }
 
   return fullText;
+}
+
+// ── Tool-calling streaming ─────────────────────────────────
+
+export interface StreamWithToolsOptions {
+  /** Full message history (system + user + assistant + tool). */
+  messages: { role: 'system' | 'user' | 'assistant' | 'tool'; content: string; tool_call_id?: string; name?: string }[];
+  /** Tool definitions the model may call. */
+  tools: ToolSchema[];
+  /** Called for each streamed text token. */
+  onDelta?: (text: string) => void;
+  /** Called when tool-call fragments arrive (incremental). */
+  onToolDelta?: () => void;
+  /** Called when metadata (reasoning, confidence, chips) arrives. */
+  onMetadata?: (meta: Partial<StreamEvent>) => void;
+  model?: string;
+}
+
+export interface StreamWithToolsResult {
+  /** The complete streamed text (may be empty when only tools are called). */
+  text: string;
+  /** Fully-assembled tool calls the model requested this turn. */
+  toolCalls: ToolCall[];
+  /** Why the model stopped ('tool_calls' | 'stop' | …). */
+  finishReason: string | null;
+}
+
+/**
+ * Streaming chat that supports Groq function calling. Accumulates the
+ * fragmented `tool_calls` deltas across the stream (Groq splits a single
+ * call's JSON arguments over many chunks) and returns complete ToolCall[].
+ *
+ * The caller is responsible for executing the tools and making a follow-up
+ * request with `tool` role messages — this function does NOT execute tools.
+ */
+export async function streamChatWithTools(
+  options: StreamWithToolsOptions,
+): Promise<StreamWithToolsResult> {
+  const accumulator = new ToolCallAccumulator();
+  let text = '';
+  let finishReason: string | null = null;
+
+  await streamChat(
+    options.messages,
+    (delta) => {
+      text += delta;
+      options.onDelta?.(delta);
+    },
+    (meta) => {
+      // ── Tool-call deltas ──
+      if (meta.tool_calls) {
+        accumulator.feed({ choices: [{ delta: { tool_calls: meta.tool_calls } }] });
+        options.onToolDelta?.();
+      }
+      // ── Finish reason (tool_calls | stop | …) ──
+      if (meta.finish_reason) {
+        finishReason = meta.finish_reason;
+      }
+      // ── Non-tool metadata (reasoning, confidence, chips) ──
+      if (meta.reasoning || meta.confidence != null || meta.suggestionChips || meta.referencedMemoryIds) {
+        options.onMetadata?.({
+          reasoning: meta.reasoning,
+          confidence: meta.confidence,
+          suggestionChips: meta.suggestionChips,
+          referencedMemoryIds: meta.referencedMemoryIds,
+        });
+      }
+    },
+    options.model ?? GROQ_MODELS.reasoning,
+    undefined,
+    { tools: options.tools, tool_choice: 'auto' },
+  );
+
+  const toolCalls = accumulator.flush((name, raw, err) => {
+    console.warn('[EchoOS] Failed to parse tool args for', name, err, raw);
+  });
+
+  return { text, toolCalls, finishReason };
 }
 
 // ── Intelligence-optimized streaming ───────────────────────
