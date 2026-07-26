@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { IconAnalytics } from '@/components/ui/icons';
+import { IconAnalytics, IconAlertTriangle } from '@/components/ui/icons';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { MOODS } from '@/config/constants';
+import { MOODS, MONTH_ABBREVIATIONS } from '@/config/constants';
 
 const MOOD_COLORS: Record<string, string> = {
   joy: '#ffd166',
@@ -26,6 +26,24 @@ export default function AnalyticsPage() {
       <>
         <PageHeader title="Analytics" subtitle="Your memories, in numbers." />
         <LoadingState />
+      </>
+    );
+  }
+
+  if (data.error) {
+    return (
+      <>
+        <PageHeader title="Analytics" subtitle="Your memories, in numbers." />
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(data.error as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       </>
     );
   }
@@ -230,7 +248,7 @@ export default function AnalyticsPage() {
                     <span className="text-[9px] text-white/55">{m.count}</span>
                   )}
                   <span className="text-[9px] text-white/55">
-                    {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][m.month]}
+                    {MONTH_ABBREVIATIONS[m.month]}
                   </span>
                 </div>
               ))}

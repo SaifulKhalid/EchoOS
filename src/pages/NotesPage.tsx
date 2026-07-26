@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconNote, IconSparkle } from '@/components/ui/icons';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { IconNote, IconSparkle, IconAlertTriangle } from '@/components/ui/icons';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { NoteFormModal } from '@/components/notes/NoteFormModal';
 import { useNotes } from '@/hooks/useNotes';
@@ -29,7 +30,7 @@ const TYPE_FILTERS: { id: string; label: string }[] = [
  * type-based filtering and sort controls.
  */
 export default function NotesPage() {
-  const { data: entries, isLoading } = useNotes();
+  const { data: entries, isLoading, error } = useNotes();
   const [editing, setEditing] = useState<NoteEntry | null>(null);
   const [adding, setAdding] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>('date');
@@ -74,7 +75,7 @@ export default function NotesPage() {
       />
 
       {/* Filter & sort toolbar */}
-      {displayed.length > 0 && (
+      {entries && entries.length > 0 && (
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 p-1">
             {TYPE_FILTERS.map((f) => (
@@ -117,6 +118,17 @@ export default function NotesPage() {
       {/* Content */}
       {isLoading ? (
         <LoadingGrid />
+      ) : error ? (
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(error as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       ) : displayed.length === 0 && filterType !== 'all' ? (
         <EmptyState
           icon={<IconNote width={26} height={26} />}

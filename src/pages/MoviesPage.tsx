@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconMovie } from '@/components/ui/icons';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { IconMovie, IconAlertTriangle } from '@/components/ui/icons';
 import { MovieSearchBar } from '@/components/movies/MovieSearchBar';
 import { MovieEditModal } from '@/components/movies/MovieEditModal';
 import { useMovies } from '@/hooks/useMovies';
@@ -22,7 +23,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
  * click-to-edit modal, and sort/filter controls.
  */
 export default function MoviesPage() {
-  const { data: movies, isLoading } = useMovies();
+  const { data: movies, isLoading, error } = useMovies();
   const [editing, setEditing] = useState<MovieEntry | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>('watchDate');
   const [filterFavorites, setFilterFavorites] = useState(false);
@@ -101,6 +102,17 @@ export default function MoviesPage() {
       {/* Content area */}
       {isLoading ? (
         <LoadingGrid />
+      ) : error ? (
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(error as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       ) : displayed.length === 0 ? (
         <EmptyState
           icon={<IconMovie width={26} height={26} />}

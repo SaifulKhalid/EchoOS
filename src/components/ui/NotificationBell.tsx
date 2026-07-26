@@ -20,7 +20,6 @@ export function NotificationBell() {
   const deleteNotif = useDeleteNotification();
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     function onPointerDown(e: PointerEvent) {
@@ -28,14 +27,22 @@ export function NotificationBell() {
         setOpen(false);
       }
     }
+    function onKeyDown(e: globalThis.KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
     document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [open]);
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl text-white/55 transition-colors hover:bg-white/10 hover:text-white/90"
         aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}
       >
@@ -54,9 +61,10 @@ export function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.95 }}
             transition={{ duration: 0.15 }}
+            role="listbox"
+            aria-label="Notifications"
             className="glass-strong absolute right-0 z-30 mt-2 w-80 rounded-2xl border border-white/10 shadow-glass-lg animate-fade-in"
           >
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <p className="text-sm font-medium text-white/80">Notifications</p>
               {unread > 0 && (
@@ -70,7 +78,6 @@ export function NotificationBell() {
               )}
             </div>
 
-            {/* List */}
             <div className="max-h-80 overflow-y-auto">
               {!notifications || notifications.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
@@ -84,11 +91,11 @@ export function NotificationBell() {
                   return (
                     <div
                       key={n.id}
+                      role="option"
                       className={`group flex items-start gap-3 border-b border-white/5 px-4 py-3 transition-colors hover:bg-white/5 ${
                         !n.read ? 'bg-accent/[0.02]' : ''
                       }`}
                     >
-                      {/* Type dot */}
                       <div
                         className={`mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${meta.bg}`}
                       >
@@ -97,7 +104,6 @@ export function NotificationBell() {
                         </span>
                       </div>
 
-                      {/* Content */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <p className="truncate text-sm font-medium text-white/80">
@@ -115,7 +121,6 @@ export function NotificationBell() {
                         <p className="mt-1 text-[10px] text-white/55">{time}</p>
                       </div>
 
-                      {/* Actions */}
                       <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {!n.read && (
                           <button

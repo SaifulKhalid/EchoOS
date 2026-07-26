@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import * as notifService from '@/services/firestore/notifications';
-import type { NotificationType, MemoryCategory } from '@/types';
+import type { NotificationType, NotificationEntry, MemoryCategory } from '@/types';
 
 /** Query all notifications for the current user. */
 export function useNotifications() {
@@ -26,7 +26,20 @@ export function useMarkRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => notifService.markNotificationRead(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications', user?.uid] });
+      const previous = queryClient.getQueryData(['notifications', user?.uid]);
+      queryClient.setQueryData(['notifications', user?.uid], (old: NotificationEntry[] | undefined) => {
+        return old?.map((item) => item.id === id ? { ...item, read: true } : item);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['notifications', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.uid] });
     },
   });
@@ -38,7 +51,20 @@ export function useMarkAllRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => notifService.markAllNotificationsRead(user!.uid),
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['notifications', user?.uid] });
+      const previous = queryClient.getQueryData(['notifications', user?.uid]);
+      queryClient.setQueryData(['notifications', user?.uid], (old: NotificationEntry[] | undefined) => {
+        return old?.map((item) => ({ ...item, read: true }));
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['notifications', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.uid] });
     },
   });
@@ -61,7 +87,21 @@ export function useCreateNotification() {
         ...data,
         read: false,
       }),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications', user?.uid] });
+      const previous = queryClient.getQueryData(['notifications', user?.uid]);
+      queryClient.setQueryData(['notifications', user?.uid], (old: NotificationEntry[] | undefined) => {
+        const optimistic = { id: 'optimistic-' + Date.now(), createdAt: Date.now(), read: false, ...newData } as NotificationEntry;
+        return old ? [optimistic, ...old] : [optimistic];
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['notifications', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.uid] });
     },
   });
@@ -73,7 +113,20 @@ export function useDeleteNotification() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => notifService.deleteNotification(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications', user?.uid] });
+      const previous = queryClient.getQueryData(['notifications', user?.uid]);
+      queryClient.setQueryData(['notifications', user?.uid], (old: NotificationEntry[] | undefined) => {
+        return old?.filter((item) => item.id !== id);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['notifications', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.uid] });
     },
   });

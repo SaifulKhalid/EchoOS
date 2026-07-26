@@ -33,6 +33,14 @@ export function cacheSet<T>(key: string, value: T, ttlMs: number): void {
   }
 }
 
+export function cacheRemove(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore
+  }
+}
+
 export const TTL = {
   hour: 60 * 60 * 1000,
   day: 24 * 60 * 60 * 1000,

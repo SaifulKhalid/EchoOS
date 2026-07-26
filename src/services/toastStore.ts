@@ -6,7 +6,6 @@ interface Toast {
   id: string;
   message: string;
   variant: ToastVariant;
-  /** Optional action label shown as a button (e.g. "Undo"). */
   action?: { label: string; onClick: () => void };
   duration?: number;
 }
@@ -15,32 +14,42 @@ interface ToastState {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => string;
   removeToast: (id: string) => void;
-  /** Convenience helpers */
   success: (message: string, action?: Toast['action']) => string;
   error: (message: string) => string;
   info: (message: string) => string;
   warning: (message: string) => string;
 }
 
-let counter = 0;
+const timeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+function generateId(): string {
+  return `toast-${crypto.randomUUID().slice(0, 8)}`;
+}
 
 export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
 
   addToast: (toast) => {
-    const id = `toast-${++counter}`;
+    const id = generateId();
     const duration = toast.duration ?? 4000;
     set((s) => ({ toasts: [...s.toasts, { ...toast, id }] }));
 
     if (duration > 0) {
-      setTimeout(() => {
+      const handle = setTimeout(() => {
+        timeouts.delete(id);
         get().removeToast(id);
       }, duration);
+      timeouts.set(id, handle);
     }
     return id;
   },
 
   removeToast: (id) => {
+    const existing = timeouts.get(id);
+    if (existing) {
+      clearTimeout(existing);
+      timeouts.delete(id);
+    }
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
   },
 

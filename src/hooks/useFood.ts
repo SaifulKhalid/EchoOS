@@ -20,7 +20,21 @@ export function useAddFood() {
   return useMutation({
     mutationFn: (data: Omit<FoodEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
       foodService.addFood(user!.uid, data),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['food', user?.uid] });
+      const previous = queryClient.getQueryData(['food', user?.uid]);
+      queryClient.setQueryData(['food', user?.uid], (old: FoodEntry[] | undefined) => {
+        const optimistic = { id: 'optimistic-' + Date.now(), createdAt: Date.now(), updatedAt: Date.now(), ...newData } as FoodEntry;
+        return old ? [optimistic, ...old] : [optimistic];
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['food', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['food', user?.uid] });
     },
   });
@@ -38,7 +52,20 @@ export function useUpdateFood() {
       id: string;
       data: Partial<Omit<FoodEntry, 'id' | 'createdAt' | 'updatedAt'>>;
     }) => foodService.updateFood(user!.uid, id, data),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['food', user?.uid] });
+      const previous = queryClient.getQueryData(['food', user?.uid]);
+      queryClient.setQueryData(['food', user?.uid], (old: FoodEntry[] | undefined) => {
+        return old?.map((item) => item.id === id ? { ...item, ...data } : item);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['food', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['food', user?.uid] });
     },
   });
@@ -50,7 +77,20 @@ export function useDeleteFood() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => foodService.deleteFood(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['food', user?.uid] });
+      const previous = queryClient.getQueryData(['food', user?.uid]);
+      queryClient.setQueryData(['food', user?.uid], (old: FoodEntry[] | undefined) => {
+        return old?.filter((item) => item.id !== id);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['food', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['food', user?.uid] });
     },
   });

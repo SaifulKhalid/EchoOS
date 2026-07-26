@@ -20,7 +20,21 @@ export function useAddTravel() {
   return useMutation({
     mutationFn: (data: Omit<TravelEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
       travelService.addTravel(user!.uid, data),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['travel', user?.uid] });
+      const previous = queryClient.getQueryData(['travel', user?.uid]);
+      queryClient.setQueryData(['travel', user?.uid], (old: TravelEntry[] | undefined) => {
+        const optimistic = { id: 'optimistic-' + Date.now(), createdAt: Date.now(), updatedAt: Date.now(), ...newData } as TravelEntry;
+        return old ? [optimistic, ...old] : [optimistic];
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['travel', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['travel', user?.uid] });
     },
   });
@@ -38,7 +52,20 @@ export function useUpdateTravel() {
       id: string;
       data: Partial<Omit<TravelEntry, 'id' | 'createdAt' | 'updatedAt'>>;
     }) => travelService.updateTravel(user!.uid, id, data),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['travel', user?.uid] });
+      const previous = queryClient.getQueryData(['travel', user?.uid]);
+      queryClient.setQueryData(['travel', user?.uid], (old: TravelEntry[] | undefined) => {
+        return old?.map((item) => item.id === id ? { ...item, ...data } : item);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['travel', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['travel', user?.uid] });
     },
   });
@@ -50,7 +77,20 @@ export function useDeleteTravel() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => travelService.deleteTravel(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['travel', user?.uid] });
+      const previous = queryClient.getQueryData(['travel', user?.uid]);
+      queryClient.setQueryData(['travel', user?.uid], (old: TravelEntry[] | undefined) => {
+        return old?.filter((item) => item.id !== id);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['travel', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['travel', user?.uid] });
     },
   });

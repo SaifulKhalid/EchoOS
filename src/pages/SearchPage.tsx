@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { IconSearch, IconX } from '@/components/ui/icons';
+import { IconSearch, IconX, IconAlertTriangle } from '@/components/ui/icons';
 import { useSearch } from '@/hooks/useSearch';
 import { MEMORY_CATEGORIES, MOODS } from '@/config/constants';
 import { formatDateLong } from '@/utils/dates';
@@ -35,6 +35,7 @@ export default function SearchPage() {
   const {
     results,
     isLoading,
+    error,
     filters,
     hasActiveFilters,
     setQuery,
@@ -160,6 +161,17 @@ export default function SearchPage() {
             <div key={i} className="skeleton h-16 rounded-2xl" />
           ))}
         </div>
+      ) : error ? (
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(error as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       ) : hasActiveFilters && results.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-white/55">

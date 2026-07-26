@@ -8,11 +8,12 @@ import type {
 } from './types';
 
 /**
- * TMDB client with two transport modes (Phase 1 decision):
+ * TMDB client with two transport modes:
  *   • DEV  — if VITE_TMDB_DEV_KEY is set, call TMDB directly (browser).
  *   • PROD — otherwise call the Vercel proxy at /api/tmdb, which injects the
  *            secret key server-side after verifying the Firebase ID token.
  * Movie details are cached in localStorage so re-opening a film is free.
+ * Search results are also cached briefly to avoid redundant API hits.
  */
 
 const TMDB_DIRECT = 'https://api.themoviedb.org/3';
@@ -51,14 +52,20 @@ function tmdbFetch<T>(path: string, params: Record<string, string>): Promise<T> 
 export async function searchMovies(query: string): Promise<TmdbSearchResult[]> {
   const q = query.trim();
   if (!q) return [];
+
+  const cacheKey = `tmdb:search:${q.toLowerCase()}`;
+  const cached = cacheGet<TmdbSearchResult[]>(cacheKey);
+  if (cached) return cached;
+
   const data = await tmdbFetch<TmdbSearchResponse>('search/movie', {
     query: q,
     include_adult: 'false',
     language: 'en-US',
     page: '1',
   });
-  // Only films with a poster read well in the results grid.
-  return data.results.filter((r) => r.poster_path).slice(0, 18);
+  const results = data.results.filter((r) => r.poster_path).slice(0, 18);
+  cacheSet(cacheKey, results, TTL.hour);
+  return results;
 }
 
 export async function getMovieDetails(id: number): Promise<TmdbMovieDetails> {

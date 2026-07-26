@@ -144,6 +144,8 @@ export function useTimeline() {
 
   const isLoading = movies.isLoading || food.isLoading || travel.isLoading || notes.isLoading || wishlist.isLoading;
 
+  const error = movies.error || food.error || travel.error || notes.error || wishlist.error;
+
   const entries = useMemo<TimelineEntry[]>(() => {
     const all: TimelineEntry[] = [];
 
@@ -172,5 +174,5 @@ export function useTimeline() {
     return all;
   }, [movies.data, food.data, travel.data, notes.data, wishlist.data]);
 
-  return { entries, isLoading };
+  return { entries, isLoading, error };
 }

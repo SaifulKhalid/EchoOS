@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '@/config/constants';
@@ -33,13 +33,21 @@ const MORE_ITEMS = [
   { to: ROUTES.settings, label: 'Settings', Icon: IconSettings },
 ];
 
-/** Mobile-only bottom navigation bar with a "More" sheet for extra links. */
 export function MobileNav() {
   const [moreOpen, setMoreOpen] = useState(false);
 
+  useEffect(() => {
+    if (!moreOpen) return;
+    function onKeyDown(e: globalThis.KeyboardEvent) {
+      if (e.key === 'Escape') setMoreOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [moreOpen]);
+
   return (
     <>
-      <nav className="glass-strong fixed inset-x-0 bottom-0 z-30 flex items-center justify-around rounded-none border-x-0 border-b-0 px-2 py-2 md:hidden">
+      <nav className="glass-strong fixed inset-x-0 bottom-0 z-30 flex items-center justify-around rounded-none border-x-0 border-b-0 px-2 py-2 md:hidden" aria-label="Mobile navigation">
         {PRIMARY.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
@@ -56,9 +64,9 @@ export function MobileNav() {
           </NavLink>
         ))}
 
-        {/* More button */}
         <button
           onClick={() => setMoreOpen(true)}
+          aria-expanded={moreOpen}
           className="flex flex-1 flex-col items-center gap-1 rounded-lg py-1.5 text-[10px] text-white/50 transition-colors"
           aria-label="More navigation"
         >
@@ -71,7 +79,6 @@ export function MobileNav() {
         </button>
       </nav>
 
-      {/* More sheet overlay */}
       <AnimatePresence>
         {moreOpen && (
           <>
@@ -88,6 +95,9 @@ export function MobileNav() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="More navigation links"
               className="glass-strong fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-x-0 border-b-0 p-5 pb-10 md:hidden"
             >
               <div className="mb-1 flex items-center justify-between">

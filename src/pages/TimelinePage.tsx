@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconTimeline } from '@/components/ui/icons';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { IconTimeline, IconAlertTriangle } from '@/components/ui/icons';
 import { TimelineItem } from '@/components/timeline/TimelineItem';
 import { useTimeline, type TimelineEntry } from '@/hooks/useTimeline';
 import { MEMORY_CATEGORIES, MOODS } from '@/config/constants';
@@ -13,7 +14,7 @@ import { MEMORY_CATEGORIES, MOODS } from '@/config/constants';
  * full-text search.
  */
 export default function TimelinePage() {
-  const { entries, isLoading } = useTimeline();
+  const { entries, isLoading, error } = useTimeline();
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterMood, setFilterMood] = useState<string>('all');
@@ -139,6 +140,17 @@ export default function TimelinePage() {
       {/* Content */}
       {isLoading ? (
         <LoadingFeed />
+      ) : error ? (
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(error as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       ) : displayed.length === 0 && (filterCategory !== 'all' || filterMood !== 'all' || search) ? (
         <EmptyState
           icon={<IconTimeline width={26} height={26} />}

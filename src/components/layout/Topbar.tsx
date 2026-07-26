@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/firebase/auth';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { IconLogout, IconSparkle } from '@/components/ui/icons';
 
-/** Top bar: contextual greeting + user avatar with a sign-out menu. */
 export function Topbar() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    function onEscape(e: globalThis.KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [open]);
 
   const name = user?.displayName?.split(' ')[0] ?? (user?.isAnonymous ? 'Guest' : 'there');
   const initial = (user?.displayName ?? 'G').charAt(0).toUpperCase();
@@ -26,6 +34,8 @@ export function Topbar() {
 
         <button
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-haspopup="menu"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-gradient text-sm font-semibold text-ink-950 shadow-glow transition-transform active:scale-95"
           aria-label="Account menu"
         >
@@ -47,7 +57,7 @@ export function Topbar() {
               onClick={() => setOpen(false)}
               aria-hidden
             />
-            <div className="glass-strong absolute right-0 z-20 mt-2 w-56 rounded-2xl p-2 animate-fade-in">
+            <div role="menu" className="glass-strong absolute right-0 z-20 mt-2 w-56 rounded-2xl p-2 animate-fade-in">
               <div className="border-b border-white/10 px-3 py-2">
                 <p className="truncate text-sm font-medium text-white/90">
                   {user?.displayName ?? 'Guest session'}
@@ -57,6 +67,7 @@ export function Topbar() {
                 </p>
               </div>
               <button
+                role="menuitem"
                 onClick={() => {
                   const isAnon = user?.isAnonymous;
                   if (isAnon && !window.confirm('You are signed in as a guest. Signing out will permanently lose all your data unless you link a Google account first. Continue?')) return;

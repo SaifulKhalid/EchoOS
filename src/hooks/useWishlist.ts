@@ -20,7 +20,21 @@ export function useAddWishlistItem() {
   return useMutation({
     mutationFn: (data: Omit<WishlistEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
       wishlistService.addWishlistItem(user!.uid, data),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['wishlist', user?.uid] });
+      const previous = queryClient.getQueryData(['wishlist', user?.uid]);
+      queryClient.setQueryData(['wishlist', user?.uid], (old: WishlistEntry[] | undefined) => {
+        const optimistic = { id: 'optimistic-' + Date.now(), createdAt: Date.now(), updatedAt: Date.now(), ...newData } as WishlistEntry;
+        return old ? [optimistic, ...old] : [optimistic];
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['wishlist', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist', user?.uid] });
     },
   });
@@ -38,7 +52,20 @@ export function useUpdateWishlistItem() {
       id: string;
       data: Partial<Omit<WishlistEntry, 'id' | 'createdAt' | 'updatedAt'>>;
     }) => wishlistService.updateWishlistItem(user!.uid, id, data),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['wishlist', user?.uid] });
+      const previous = queryClient.getQueryData(['wishlist', user?.uid]);
+      queryClient.setQueryData(['wishlist', user?.uid], (old: WishlistEntry[] | undefined) => {
+        return old?.map((item) => item.id === id ? { ...item, ...data } : item);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['wishlist', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist', user?.uid] });
     },
   });
@@ -50,7 +77,20 @@ export function useDeleteWishlistItem() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => wishlistService.deleteWishlistItem(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['wishlist', user?.uid] });
+      const previous = queryClient.getQueryData(['wishlist', user?.uid]);
+      queryClient.setQueryData(['wishlist', user?.uid], (old: WishlistEntry[] | undefined) => {
+        return old?.filter((item) => item.id !== id);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['wishlist', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist', user?.uid] });
     },
   });

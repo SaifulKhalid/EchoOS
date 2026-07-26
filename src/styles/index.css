@@ -11,6 +11,17 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --color-accent: #7c6cff;
+    --color-accent-soft: #9d8bff;
+    --color-accent-cyan: #4fd6e6;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
+    --radius-2xl: 1.75rem;
+    --z-panel: 10;
+    --z-overlay: 20;
+    --z-modal: 30;
+    --z-toast: 40;
   }
 
   html,
@@ -21,32 +32,48 @@
 
   body {
     @apply bg-ink-950 text-white/90 font-sans antialiased;
-    /* Ambient aurora backdrop — the only place raw color bleeds through glass. */
     background-image:
       radial-gradient(60rem 60rem at 15% -10%, rgba(124, 108, 255, 0.18), transparent 60%),
       radial-gradient(50rem 50rem at 110% 10%, rgba(79, 214, 230, 0.12), transparent 55%),
       radial-gradient(40rem 40rem at 50% 120%, rgba(157, 139, 255, 0.1), transparent 60%);
-    background-attachment: fixed;
+    background-attachment: scroll;
   }
 
   /* Thin, unobtrusive scrollbars that match the theme. */
-  * {
+  html, body, [data-scrollable] {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
-  *::-webkit-scrollbar {
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  [data-scrollable]::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  *::-webkit-scrollbar-thumb {
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  [data-scrollable]::-webkit-scrollbar-thumb {
     @apply rounded-full bg-white/10;
   }
-  *::-webkit-scrollbar-thumb:hover {
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover,
+  [data-scrollable]::-webkit-scrollbar-thumb:hover {
     @apply bg-white/20;
   }
 
   ::selection {
     background: rgba(124, 108, 255, 0.35);
+  }
+
+  /* Respect the user's motion preferences. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -54,15 +81,18 @@
   /* Frosted glass panel — the core surface primitive. */
   .glass {
     @apply border border-white/10 bg-white/5 shadow-glass backdrop-blur-xl;
+    will-change: transform;
   }
 
   .glass-strong {
     @apply border border-white/10 bg-ink-800/60 shadow-glass-lg backdrop-blur-2xl;
+    will-change: transform;
   }
 
   /* Subtle top-sheen used on hoverable cards. */
   .glass-card {
-    @apply glass relative overflow-hidden rounded-2xl transition-all duration-300;
+    @apply glass relative overflow-hidden rounded-2xl;
+    transition: transform 300ms, box-shadow 300ms, border-color 300ms;
   }
   .glass-card::before {
     content: '';

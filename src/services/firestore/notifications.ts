@@ -10,9 +10,11 @@ import {
   where,
   limit,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import type { NotificationEntry } from '@/types';
+import { safeDoc, firestorePayload } from './_helpers';
 
 function notificationsRef(uid: string) {
   return collection(db, 'users', uid, 'notifications');
@@ -22,53 +24,88 @@ function notifDocRef(uid: string, id: string) {
   return doc(db, 'users', uid, 'notifications', id);
 }
 
-/** Fetch all notifications for a user, newest first. */
 export async function fetchNotifications(uid: string): Promise<NotificationEntry[]> {
-  const q = query(
-    notificationsRef(uid),
-    orderBy('createdAt', 'desc'),
-    limit(50),
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as NotificationEntry[];
+  if (!uid || typeof uid !== 'string') throw new Error('uid is required');
+  try {
+    const q = query(
+      notificationsRef(uid),
+      orderBy('createdAt', 'desc'),
+      limit(50),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => safeDoc<NotificationEntry>(d));
+  } catch (err) {
+    throw new Error(`Failed to fetch notifications: ${(err as Error).message}`);
+  }
 }
 
-/** Create a notification. */
 export async function addNotification(
   uid: string,
   data: Omit<NotificationEntry, 'id' | 'createdAt'>,
 ): Promise<string> {
-  const ref = await addDoc(notificationsRef(uid), {
-    ...data,
-    createdAt: serverTimestamp(),
-  } as Record<string, unknown>);
-  return ref.id;
+  if (!uid || typeof uid !== 'string') throw new Error('uid is required');
+  try {
+    const ref = await addDoc(
+      notificationsRef(uid),
+      firestorePayload({
+        ...data,
+        createdAt: serverTimestamp(),
+      }),
+    );
+    return ref.id;
+  } catch (err) {
+    throw new Error(`Failed to add notification: ${(err as Error).message}`);
+  }
 }
 
-/** Mark a single notification as read. */
 export async function markNotificationRead(
   uid: string,
   id: string,
 ): Promise<void> {
-  await updateDoc(notifDocRef(uid, id), {
-    read: true,
-  } as Record<string, unknown>);
+  if (!uid || typeof uid !== 'string') throw new Error('uid is required');
+  if (!id || typeof id !== 'string') throw new Error('id is required');
+  try {
+    await updateDoc(
+      notifDocRef(uid, id),
+      firestorePayload({ read: true }),
+    );
+  } catch (err) {
+    throw new Error(`Failed to mark notification read: ${(err as Error).message}`);
+  }
 }
 
-/** Mark all notifications as read. */
 export async function markAllNotificationsRead(uid: string): Promise<void> {
-  const q = query(notificationsRef(uid), where('read', '==', false));
-  const snapshot = await getDocs(q);
-  const writes = snapshot.docs.map((d) =>
-    updateDoc(d.ref, { read: true } as Record<string, unknown>),
-  );
-  await Promise.all(writes);
+  if (!uid || typeof uid !== 'string') throw new Error('uid is required');
+  try {
+    const q = query(
+      notificationsRef(uid),
+      where('read', '==', false),
+      limit(50),
+    );
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+    for (let i = 0; i < docs.length; i += 500) {
+      const batch = writeBatch(db);
+      const chunk = docs.slice(i, i + 500);
+      for (const d of chunk) {
+        batch.update(d.ref, firestorePayload({ read: true }));
+      }
+      await batch.commit();
+    }
+  } catch (err) {
+    throw new Error(`Failed to mark all notifications read: ${(err as Error).message}`);
+  }
 }
 
-/** Delete a single notification. */
 export async function deleteNotification(
   uid: string,
   id: string,
 ): Promise<void> {
-  await deleteDoc(notifDocRef(uid, id));
+  if (!uid || typeof uid !== 'string') throw new Error('uid is required');
+  if (!id || typeof id !== 'string') throw new Error('id is required');
+  try {
+    await deleteDoc(notifDocRef(uid, id));
+  } catch (err) {
+    throw new Error(`Failed to delete notification: ${(err as Error).message}`);
+  }
 }

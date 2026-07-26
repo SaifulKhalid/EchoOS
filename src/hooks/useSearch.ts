@@ -31,7 +31,7 @@ function searchableText(e: TimelineEntry): string {
  * The search is debounced at 200ms for smooth typing.
  */
 export function useSearch() {
-  const { entries, isLoading } = useTimeline();
+  const { entries, isLoading, error } = useTimeline();
   const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -149,6 +149,7 @@ export function useSearch() {
   return {
     results,
     isLoading,
+    error,
     filters,
     hasActiveFilters,
     setQuery,

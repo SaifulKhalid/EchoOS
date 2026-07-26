@@ -20,7 +20,21 @@ export function useAddNote() {
   return useMutation({
     mutationFn: (data: Omit<NoteEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
       noteService.addNote(user!.uid, data),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['notes', user?.uid] });
+      const previous = queryClient.getQueryData(['notes', user?.uid]);
+      queryClient.setQueryData(['notes', user?.uid], (old: NoteEntry[] | undefined) => {
+        const optimistic = { id: 'optimistic-' + Date.now(), createdAt: Date.now(), updatedAt: Date.now(), ...newData } as NoteEntry;
+        return old ? [optimistic, ...old] : [optimistic];
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['notes', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', user?.uid] });
     },
   });
@@ -38,7 +52,20 @@ export function useUpdateNote() {
       id: string;
       data: Partial<Omit<NoteEntry, 'id' | 'createdAt' | 'updatedAt'>>;
     }) => noteService.updateNote(user!.uid, id, data),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['notes', user?.uid] });
+      const previous = queryClient.getQueryData(['notes', user?.uid]);
+      queryClient.setQueryData(['notes', user?.uid], (old: NoteEntry[] | undefined) => {
+        return old?.map((item) => item.id === id ? { ...item, ...data } : item);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['notes', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', user?.uid] });
     },
   });
@@ -50,7 +77,20 @@ export function useDeleteNote() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => noteService.deleteNote(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['notes', user?.uid] });
+      const previous = queryClient.getQueryData(['notes', user?.uid]);
+      queryClient.setQueryData(['notes', user?.uid], (old: NoteEntry[] | undefined) => {
+        return old?.filter((item) => item.id !== id);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['notes', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', user?.uid] });
     },
   });

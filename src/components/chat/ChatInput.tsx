@@ -54,6 +54,7 @@ export function ChatInput({
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
+        aria-label="Type a message"
         placeholder="Ask about your memories…"
         rows={1}
         disabled={disabled}
@@ -62,6 +63,7 @@ export function ChatInput({
       <button
         onClick={handleSubmit}
         disabled={!text.trim() || disabled}
+        aria-label="Send message"
         className="btn-primary shrink-0 px-4 py-2"
       >
         {disabled ? (

@@ -95,6 +95,7 @@ export function ChatMessage({
               <div className="glass rounded-xl border border-accent/15">
                 <button
                   onClick={() => setShowReasoning(!showReasoning)}
+                  aria-expanded={showReasoning}
                   className="flex w-full items-center justify-between px-4 py-2 text-xs text-white/50 transition-colors hover:text-white/70"
                 >
                   <span className="flex items-center gap-1.5">

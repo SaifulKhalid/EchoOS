@@ -1,5 +1,6 @@
 /**
- * App-wide constants: routes, memory categories, moods, models.
+ * App-wide constants: routes, memory categories, moods, models,
+ * shared style maps, and utility constants.
  * Kept in one place so navigation, filters, and analytics stay in sync.
  */
 
@@ -44,6 +45,59 @@ export const MOODS = [
 ] as const;
 
 export type MoodId = (typeof MOODS)[number]['id'];
+
+/** Shared mood background map — used by all card components. */
+export const MOOD_BG: Record<string, string> = {
+  joy: 'bg-mood-joy/60',
+  calm: 'bg-mood-calm/60',
+  love: 'bg-mood-love/60',
+  sad: 'bg-mood-sad/60',
+  awe: 'bg-mood-awe/60',
+  neutral: 'bg-mood-neutral/60',
+};
+
+/** Shared note type style map. */
+export const NOTE_TYPE_STYLE: Record<string, string> = {
+  idea: 'bg-accent/15 text-accent-soft border-accent/20',
+  journal: 'bg-mood-calm/15 text-mood-calm border-mood-calm/20',
+  thought: 'bg-mood-awe/15 text-mood-awe border-mood-awe/20',
+};
+
+export const NOTE_TYPE_LABEL: Record<string, string> = {
+  idea: 'Idea',
+  journal: 'Journal',
+  thought: 'Thought',
+};
+
+/** Shared wishlist category style map. */
+export const WISHLIST_CATEGORY_STYLE: Record<string, string> = {
+  movie: 'bg-accent/15 text-accent-soft border-accent/20',
+  place: 'bg-mood-calm/15 text-mood-calm border-mood-calm/20',
+  food: 'bg-mood-joy/15 text-mood-joy border-mood-joy/20',
+  book: 'bg-mood-awe/15 text-mood-awe border-mood-awe/20',
+  product: 'bg-mood-neutral/15 text-mood-neutral border-mood-neutral/20',
+};
+
+/** Shared timeline category meta map. */
+export const TIMELINE_CATEGORY_META: Record<string, { icon: string; label: string; color: string }> = {
+  movie: { icon: '🎬', label: 'Movie', color: 'bg-accent/15 text-accent-soft border-accent/20' },
+  food: { icon: '🍽️', label: 'Food', color: 'bg-mood-joy/15 text-mood-joy border-mood-joy/20' },
+  travel: { icon: '✈️', label: 'Travel', color: 'bg-mood-calm/15 text-mood-calm border-mood-calm/20' },
+  note: { icon: '💭', label: 'Note', color: 'bg-mood-awe/15 text-mood-awe border-mood-awe/20' },
+  wishlist: { icon: '⭐', label: 'Wishlist', color: 'bg-mood-neutral/15 text-mood-neutral border-mood-neutral/20' },
+};
+
+/** Firestore collection names used for data export. */
+export const EXPORT_COLLECTIONS = [
+  'movies', 'food', 'travel', 'notes', 'wishlist',
+  'chats', 'reminders', 'notifications',
+] as const;
+
+/** Month abbreviation array shared across Dashboard and Timeline. */
+export const MONTH_ABBREVIATIONS = [
+  'J', 'F', 'M', 'A', 'M', 'J',
+  'J', 'A', 'S', 'O', 'N', 'D',
+] as const;
 
 /** Groq models — reasoning vs. cheap summarization (wired in Phase 4). */
 export const GROQ_MODELS = {

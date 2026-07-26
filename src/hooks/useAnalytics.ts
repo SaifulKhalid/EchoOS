@@ -62,6 +62,8 @@ export function useAnalytics() {
   const isLoading =
     movies.isLoading || food.isLoading || travel.isLoading || notes.isLoading || wishlist.isLoading;
 
+  const error = movies.error || food.error || travel.error || notes.error || wishlist.error;
+
   const data = useMemo<AnalyticsData>(() => {
     const movieData = movies.data ?? [];
     const foodData = food.data ?? [];
@@ -207,5 +209,5 @@ export function useAnalytics() {
     };
   }, [movies.data, food.data, travel.data, notes.data, wishlist.data]);
 
-  return { ...data, isLoading } as AnalyticsData & { isLoading: boolean };
+  return { ...data, isLoading, error } as AnalyticsData & { isLoading: boolean; error: unknown };
 }

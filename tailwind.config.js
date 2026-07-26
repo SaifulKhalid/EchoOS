@@ -1,11 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Base surfaces — near-black with a cool tint, layered for depth.
         ink: {
           950: '#08080c',
           900: '#0a0a0f',
@@ -13,7 +11,6 @@ export default {
           700: '#181822',
           600: '#20202c',
         },
-        // Single restrained accent gradient anchor (violet -> cyan).
         accent: {
           DEFAULT: '#7c6cff',
           soft: '#9d8bff',

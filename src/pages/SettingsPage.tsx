@@ -14,6 +14,9 @@ import { db, auth } from '@/firebase/config';
 import { deleteUser } from 'firebase/auth';
 import { API_BASE_URL } from '@/config/env';
 import { dateToInputValue, todayInputValue } from '@/utils/dates';
+import { EXPORT_COLLECTIONS, APP_TAGLINE } from '@/config/constants';
+import { useToastStore } from '@/services/toastStore';
+import pkg from '../../package.json';
 import type { ReminderInterval } from '@/types';
 
 /**
@@ -38,6 +41,7 @@ export default function SettingsPage() {
   const deleteReminder = useDeleteReminder();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [remTitle, setRemTitle] = useState('');
   const [remMsg, setRemMsg] = useState('');
@@ -321,11 +325,11 @@ export default function SettingsPage() {
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-xs text-white/55">
-            <span>Version 0.1.0</span>
+            <span>Version {pkg.version}</span>
             <span>·</span>
             <span>EchoOS</span>
             <span>·</span>
-            <span className="lowercase">Your memories. Your taste. Your AI.</span>
+            <span className="lowercase">{APP_TAGLINE}</span>
           </div>
         </GlassCard>
 
@@ -354,12 +358,11 @@ export default function SettingsPage() {
             {/* Export data */}
             <button
               onClick={async () => {
-                if (!user) { window.confirm('You must be signed in to export data.'); return; }
+                if (!user) return;
                 try {
-                  const cats = ['movies', 'food', 'travel', 'notes', 'wishlist', 'chats', 'reminders', 'notifications'] as const;
                   const exportData: Record<string, unknown[]> = {};
 
-                  for (const cat of cats) {
+                  for (const cat of EXPORT_COLLECTIONS) {
                     const q = query(collection(db, 'users', user.uid, cat), orderBy('createdAt', 'desc'));
                     const snap = await getDocs(q);
                     exportData[cat] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -373,7 +376,7 @@ export default function SettingsPage() {
                   a.click();
                   URL.revokeObjectURL(url);
                 } catch {
-                  // Silently fail on export — user can retry
+                  useToastStore.getState().error('Failed to export data. Please try again.');
                 }
               }}
               className="rounded-xl border border-accent/20 bg-accent/10 px-4 py-2 text-xs text-accent-soft transition-colors hover:bg-accent/20"
@@ -393,7 +396,8 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={async () => {
-                if (!user) { window.confirm('You must be signed in to delete your account.'); return; }
+                if (!user) return;
+                setDeleteError(null);
                 if (!window.confirm('Delete your entire account? All memories, notes, and chat history will be permanently removed. This cannot be undone.')) return;
 
                 try {
@@ -413,7 +417,6 @@ export default function SettingsPage() {
                     throw new Error(text || `Error ${res.status}`);
                   }
 
-                  // Delete the Firebase Auth user after data is gone
                   if (auth.currentUser) {
                     await deleteUser(auth.currentUser).catch(() => {});
                   }
@@ -421,7 +424,7 @@ export default function SettingsPage() {
                   signOut();
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : 'An error occurred';
-                  window.confirm(`Failed to delete account: ${msg}. Please try again.`);
+                  setDeleteError(`Failed to delete account: ${msg}. Please try again.`);
                 }
               }}
               className="rounded-xl border border-mood-love/20 bg-mood-love/10 px-4 py-2 text-xs text-mood-love transition-colors hover:bg-mood-love/20"
@@ -429,6 +432,7 @@ export default function SettingsPage() {
               Delete my account and all data
             </button>
           </div>
+          {deleteError && <p className="mt-3 text-xs text-mood-love">{deleteError}</p>}
         </GlassCard>
       </div>
     </>

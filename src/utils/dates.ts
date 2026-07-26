@@ -98,7 +98,8 @@ export function dateToInputValue(date: FireDate | undefined | null): string {
 
 /** Return today's date as a `YYYY-MM-DD` string for date inputs. */
 export function todayInputValue(): string {
-  return new Date().toISOString().split('T')[0];
+  const ms = Date.now();
+  return new Date(ms).toISOString().split('T')[0];
 }
 
 /**

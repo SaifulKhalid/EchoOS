@@ -86,11 +86,11 @@ function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
 
 export function Sidebar() {
   return (
-    <aside className="glass-strong hidden w-64 shrink-0 flex-col rounded-none border-y-0 border-l-0 p-4 md:flex">
+    <aside className="glass-strong hidden w-64 shrink-0 flex-col rounded-none border-y-0 border-l-0 p-4 md:flex" aria-label="Main navigation">
       <div className="px-2 py-3">
         <Logo />
       </div>
-      <nav className="mt-2 flex-1 overflow-y-auto">
+      <nav className="mt-2 flex-1 overflow-y-auto" aria-label="Sidebar navigation">
         <NavGroup items={PRIMARY} />
         <NavGroup title="Library" items={LIBRARY} />
         <NavGroup title="Insights" items={INSIGHTS} />

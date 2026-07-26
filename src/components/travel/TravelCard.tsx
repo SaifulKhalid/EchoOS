@@ -1,23 +1,9 @@
 import type { TravelEntry } from '@/types';
 import { StarRating } from '@/components/ui/StarRating';
-import { MOODS } from '@/config/constants';
+import { MOODS, MOOD_BG } from '@/config/constants';
 import { IconTravel } from '@/components/ui/icons';
 import { formatDateRange } from '@/utils/dates';
 
-// Static map for Tailwind JIT detection.
-const MOOD_BG: Record<string, string> = {
-  joy: 'bg-mood-joy/60',
-  calm: 'bg-mood-calm/60',
-  love: 'bg-mood-love/60',
-  sad: 'bg-mood-sad/60',
-  awe: 'bg-mood-awe/60',
-  neutral: 'bg-mood-neutral/60',
-};
-
-/**
- * Travel entry card for the grid display. Shows destination, date range
- * with auto-calculated duration, budget, rating, companions, and mood.
- */
 export function TravelCard({
   entry,
   onClick,
@@ -28,9 +14,9 @@ export function TravelCard({
   return (
     <button
       onClick={onClick}
+      aria-label={`Edit travel entry: ${entry.destination}`}
       className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-glass-lg"
     >
-      {/* Mood accent bar */}
       <div
         className={`absolute inset-x-0 top-0 h-1 transition-opacity ${
           entry.mood
@@ -39,7 +25,6 @@ export function TravelCard({
         } ${entry.mood ? 'opacity-70' : 'opacity-0'}`}
       />
 
-      {/* Favorite heart */}
       {entry.favorite && (
         <div className="absolute right-3 top-3 text-mood-love drop-shadow-lg">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -48,7 +33,6 @@ export function TravelCard({
         </div>
       )}
 
-      {/* Destination icon + name */}
       <div className="mb-2.5 flex items-center gap-2.5">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-gradient/20 text-accent-soft">
           <IconTravel width={18} height={18} />
@@ -64,7 +48,6 @@ export function TravelCard({
         </div>
       </div>
 
-      {/* Rating + Budget row */}
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <StarRating value={entry.rating ?? 0} size="sm" interactive={false} />
         {entry.budget != null && (
@@ -74,7 +57,6 @@ export function TravelCard({
         )}
       </div>
 
-      {/* Companions */}
       {entry.companions && entry.companions.length > 0 && (
         <div className="mb-1.5 flex flex-wrap gap-1">
           {entry.companions.slice(0, 3).map((name) => (
@@ -93,7 +75,6 @@ export function TravelCard({
         </div>
       )}
 
-      {/* Places visited */}
       {entry.places && entry.places.length > 0 && (
         <p className="truncate text-[11px] text-white/55">
           {entry.places.slice(0, 2).join(' · ')}
@@ -101,7 +82,6 @@ export function TravelCard({
         </p>
       )}
 
-      {/* Bottom: mood */}
       {entry.mood && (
         <div className="mt-2 flex items-center gap-2">
           <span className="text-[11px] text-white/55">
@@ -112,5 +92,3 @@ export function TravelCard({
     </button>
   );
 }
-
-

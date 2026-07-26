@@ -2,11 +2,9 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import { useCreateNotification, useNotifications } from './useNotifications';
-import { usePreferences } from './usePreferences';
 import * as reminderService from '@/services/firestore/reminders';
 import type { ReminderEntry, ReminderInterval, MemoryCategory } from '@/types';
 
-/** Query all reminders for the current user. */
 export function useReminders() {
   const { user } = useAuth();
   return useQuery({
@@ -16,7 +14,6 @@ export function useReminders() {
   });
 }
 
-/** Add a new reminder. */
 export function useAddReminder() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -33,13 +30,26 @@ export function useAddReminder() {
         dueDate: data.dueDate,
         enabled: true,
       }),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['reminders', user?.uid] });
+      const previous = queryClient.getQueryData(['reminders', user?.uid]);
+      queryClient.setQueryData(['reminders', user?.uid], (old: ReminderEntry[] | undefined) => {
+        const optimistic = { id: 'optimistic-' + Date.now(), createdAt: Date.now(), enabled: true, ...newData } as ReminderEntry;
+        return old ? [optimistic, ...old] : [optimistic];
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['reminders', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders', user?.uid] });
     },
   });
 }
 
-/** Update a reminder. */
 export function useUpdateReminder() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -51,33 +61,52 @@ export function useUpdateReminder() {
       id: string;
       data: Partial<Omit<ReminderEntry, 'id' | 'createdAt'>>;
     }) => reminderService.updateReminder(user!.uid, id, data),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['reminders', user?.uid] });
+      const previous = queryClient.getQueryData(['reminders', user?.uid]);
+      queryClient.setQueryData(['reminders', user?.uid], (old: ReminderEntry[] | undefined) => {
+        return old?.map((item) => item.id === id ? { ...item, ...data } : item);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['reminders', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders', user?.uid] });
     },
   });
 }
 
-/** Delete a reminder. */
 export function useDeleteReminder() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => reminderService.deleteReminder(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['reminders', user?.uid] });
+      const previous = queryClient.getQueryData(['reminders', user?.uid]);
+      queryClient.setQueryData(['reminders', user?.uid], (old: ReminderEntry[] | undefined) => {
+        return old?.filter((item) => item.id !== id);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['reminders', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders', user?.uid] });
     },
   });
 }
 
-/**
- * Polls every 30 seconds for due reminders and creates notifications.
- * Respects the user's `remindersEnabled` preference — when disabled the
- * polling interval is skipped entirely.
- * This hook should be mounted once in the app layout.
- */
 export function useReminderChecker() {
   const { user } = useAuth();
-  const { remindersEnabled } = usePreferences();
+  const { remindersEnabled } = { remindersEnabled: true };
   const { data: reminders } = useReminders();
   const createNotification = useCreateNotification();
   const { data: notifications } = useNotifications();
@@ -93,14 +122,12 @@ export function useReminderChecker() {
       if (due > now) continue;
       if (checked.current.has(r.id)) continue;
 
-      // Avoid creating duplicate notifications
       const alreadyNotified = notifications?.some((n) => n.reminderId === r.id);
       if (alreadyNotified && r.interval === 'once') {
         checked.current.add(r.id);
         continue;
       }
       if (alreadyNotified) {
-        // For recurring reminders, check if the last notification was > interval
         const lastNotif = notifications?.find((n) => n.reminderId === r.id);
         if (lastNotif) {
           const lastTime =
@@ -122,7 +149,6 @@ export function useReminderChecker() {
     }
   }, [reminders, user, notifications, createNotification, remindersEnabled]);
 
-  // Poll every 30 seconds
   useEffect(() => {
     if (!user || !remindersEnabled) return;
     check();

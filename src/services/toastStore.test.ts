@@ -19,7 +19,7 @@ describe('useToastStore', () => {
         variant: 'info',
       });
 
-      expect(id).toMatch(/^toast-\d+$/);
+      expect(id).toMatch(/^toast-[a-f0-9]+$/);
       expect(useToastStore.getState().toasts).toHaveLength(1);
       expect(useToastStore.getState().toasts[0]).toMatchObject({
         id,

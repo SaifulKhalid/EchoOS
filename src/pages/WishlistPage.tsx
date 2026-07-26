@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconWishlist, IconSparkle } from '@/components/ui/icons';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { IconWishlist, IconSparkle, IconAlertTriangle } from '@/components/ui/icons';
 import { WishlistCard } from '@/components/wishlist/WishlistCard';
 import { WishlistFormModal } from '@/components/wishlist/WishlistFormModal';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -30,7 +31,7 @@ const CATEGORY_FILTERS: { id: string; label: string; icon: string }[] = [
  * category filtering and a toggle to show/hide completed items.
  */
 export default function WishlistPage() {
-  const { data: entries, isLoading } = useWishlist();
+  const { data: entries, isLoading, error } = useWishlist();
   const [editing, setEditing] = useState<WishlistEntry | null>(null);
   const [adding, setAdding] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>('title');
@@ -79,7 +80,7 @@ export default function WishlistPage() {
       />
 
       {/* Filter & sort toolbar */}
-      {displayed.length > 0 && (
+      {entries && entries.length > 0 && (
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 p-1">
             {CATEGORY_FILTERS.map((f) => (
@@ -133,6 +134,17 @@ export default function WishlistPage() {
       {/* Content */}
       {isLoading ? (
         <LoadingGrid />
+      ) : error ? (
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(error as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       ) : displayed.length === 0 && filterCategory !== 'all' ? (
         <EmptyState
           icon={<IconWishlist width={26} height={26} />}

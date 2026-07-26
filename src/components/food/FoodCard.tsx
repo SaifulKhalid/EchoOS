@@ -1,24 +1,9 @@
 import type { FoodEntry } from '@/types';
 import { StarRating } from '@/components/ui/StarRating';
-import { MOODS } from '@/config/constants';
+import { MOODS, MOOD_BG } from '@/config/constants';
 import { IconFood } from '@/components/ui/icons';
 import { formatDateLong } from '@/utils/dates';
 
-// Static map for Tailwind JIT detection — dynamic string interpolation
-// of class names would be stripped from the production CSS bundle.
-const MOOD_BG: Record<string, string> = {
-  joy: 'bg-mood-joy/60',
-  calm: 'bg-mood-calm/60',
-  love: 'bg-mood-love/60',
-  sad: 'bg-mood-sad/60',
-  awe: 'bg-mood-awe/60',
-  neutral: 'bg-mood-neutral/60',
-};
-
-/**
- * Food entry card for the grid display. Shows restaurant name, cuisine,
- * price, rating, mood accent, and favorite dishes.
- */
 export function FoodCard({
   entry,
   onClick,
@@ -26,13 +11,12 @@ export function FoodCard({
   entry: FoodEntry;
   onClick: () => void;
 }) {
-
   return (
     <button
       onClick={onClick}
+      aria-label={`Edit food entry: ${entry.restaurant}`}
       className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-glass-lg"
     >
-      {/* Mood accent bar */}
       <div
         className={`absolute inset-x-0 top-0 h-1 transition-opacity ${
           entry.mood
@@ -41,7 +25,6 @@ export function FoodCard({
         } ${entry.mood ? 'opacity-70' : 'opacity-0'}`}
       />
 
-      {/* Favorite heart */}
       {entry.favorite && (
         <div className="absolute right-3 top-3 text-mood-love drop-shadow-lg">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -50,7 +33,6 @@ export function FoodCard({
         </div>
       )}
 
-      {/* Restaurant icon + name */}
       <div className="mb-2 flex items-center gap-2.5">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-gradient/20 text-accent-soft">
           <IconFood width={18} height={18} />
@@ -65,7 +47,6 @@ export function FoodCard({
         </div>
       </div>
 
-      {/* Rating + Price row */}
       <div className="mb-2 flex items-center justify-between gap-2">
         <StarRating value={entry.rating ?? 0} size="sm" interactive={false} />
         {entry.price != null && (
@@ -75,7 +56,6 @@ export function FoodCard({
         )}
       </div>
 
-      {/* Favorite dishes */}
       {entry.favoriteDishes && entry.favoriteDishes.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1">
           {entry.favoriteDishes.slice(0, 2).map((dish) => (
@@ -94,7 +74,6 @@ export function FoodCard({
         </div>
       )}
 
-      {/* Bottom row: date + mood */}
       <div className="flex items-center justify-between gap-2">
         {entry.date && (
           <p className="text-[11px] text-white/55">
@@ -110,5 +89,3 @@ export function FoodCard({
     </button>
   );
 }
-
-

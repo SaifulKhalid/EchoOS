@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconTravel, IconSparkle } from '@/components/ui/icons';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { IconTravel, IconSparkle, IconAlertTriangle } from '@/components/ui/icons';
 import { TravelCard } from '@/components/travel/TravelCard';
 import { TravelFormModal } from '@/components/travel/TravelFormModal';
 import { useTravel } from '@/hooks/useTravel';
@@ -23,7 +24,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
  * Entries display in a card grid with sort and filter controls.
  */
 export default function TravelPage() {
-  const { data: entries, isLoading } = useTravel();
+  const { data: entries, isLoading, error } = useTravel();
   const [editing, setEditing] = useState<TravelEntry | null>(null);
   const [adding, setAdding] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>('startDate');
@@ -107,6 +108,17 @@ export default function TravelPage() {
       {/* Content */}
       {isLoading ? (
         <LoadingGrid />
+      ) : error ? (
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(error as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       ) : displayed.length === 0 && !filterFavorites ? (
         <EmptyState
           icon={<IconTravel width={26} height={26} />}

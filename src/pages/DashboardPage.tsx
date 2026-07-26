@@ -2,11 +2,11 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { IconSparkle, IconBell } from '@/components/ui/icons';
+import { IconSparkle, IconBell, IconAlertTriangle } from '@/components/ui/icons';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useUnreadCount } from '@/hooks/useNotifications';
-import { MOODS } from '@/config/constants';
+import { MOODS, MONTH_ABBREVIATIONS } from '@/config/constants';
 import { formatDistanceToNow } from '@/utils/dates';
 import type { ReactNode } from 'react';
 
@@ -123,8 +123,10 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 
 export default function DashboardPage() {
   const data = useAnalytics();
-  const { entries } = useTimeline();
+  const { entries, error: timelineError } = useTimeline();
   const unreadCount = useUnreadCount();
+
+  const hasError = data.error || timelineError;
 
   // ── Computer AI insights from data ────────────────────
   const insights = useMemo(() => {
@@ -198,6 +200,25 @@ export default function DashboardPage() {
             <div className="skeleton h-56 rounded-2xl" />
           </div>
         </div>
+      </>
+    );
+  }
+
+  if (hasError) {
+    const errorMsg = data.error || timelineError;
+    return (
+      <>
+        <PageHeader title="Dashboard" subtitle="A living portrait of your memories and taste." />
+        <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mood-love/15 text-mood-love">
+            <IconAlertTriangle />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white/80">Failed to load data</p>
+            <p className="mt-1 text-xs text-white/60">{(errorMsg as Error).message || 'An unexpected error occurred.'}</p>
+          </div>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Retry</button>
+        </GlassCard>
       </>
     );
   }
@@ -349,7 +370,7 @@ export default function DashboardPage() {
                       <span className="text-[9px] text-white/55">{m.count}</span>
                     )}
                     <span className="text-[9px] text-white/55">
-                      {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][m.month]}
+                      {MONTH_ABBREVIATIONS[m.month]}
                     </span>
                   </div>
                 ))}

@@ -20,7 +20,21 @@ export function useAddMovie() {
   return useMutation({
     mutationFn: (data: Omit<MovieEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
       movieService.addMovie(user!.uid, data),
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['movies', user?.uid] });
+      const previous = queryClient.getQueryData(['movies', user?.uid]);
+      queryClient.setQueryData(['movies', user?.uid], (old: MovieEntry[] | undefined) => {
+        const optimistic = { id: 'optimistic-' + Date.now(), createdAt: Date.now(), updatedAt: Date.now(), ...newData } as MovieEntry;
+        return old ? [optimistic, ...old] : [optimistic];
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['movies', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['movies', user?.uid] });
     },
   });
@@ -38,7 +52,20 @@ export function useUpdateMovie() {
       id: string;
       data: Partial<Omit<MovieEntry, 'id' | 'createdAt' | 'updatedAt'>>;
     }) => movieService.updateMovie(user!.uid, id, data),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['movies', user?.uid] });
+      const previous = queryClient.getQueryData(['movies', user?.uid]);
+      queryClient.setQueryData(['movies', user?.uid], (old: MovieEntry[] | undefined) => {
+        return old?.map((item) => item.id === id ? { ...item, ...data } : item);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['movies', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['movies', user?.uid] });
     },
   });
@@ -50,7 +77,20 @@ export function useDeleteMovie() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => movieService.deleteMovie(user!.uid, id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['movies', user?.uid] });
+      const previous = queryClient.getQueryData(['movies', user?.uid]);
+      queryClient.setQueryData(['movies', user?.uid], (old: MovieEntry[] | undefined) => {
+        return old?.filter((item) => item.id !== id);
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['movies', user?.uid], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['movies', user?.uid] });
     },
   });
