@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePreferences, type AiPersona } from '@/hooks/usePreferences';
 import { fetchMessages, addMessage } from '@/services/firestore/chats';
 import {
-  streamChatWithTools,
+  streamChatWithPipeline,
   streamChat,
   type StreamEvent,
 } from '@/services/groq/client';
@@ -18,11 +18,7 @@ import {
   TOOL_SCHEMAS,
   executeToolCalls,
 } from '@/services/tools';
-import { MemoryPipeline, type PipelineResult } from '@/memory';
 import type { ChatMessage as ChatMessageType, ActionDescriptor as AD } from '@/types';
-
-// ── Memory Intelligence Pipeline (singleton) ──────────────────
-const pipeline = new MemoryPipeline();
 
 // ── Tool instructions (appended to pipeline system prompt) ────
 function buildToolInstructions(): string {
@@ -147,40 +143,21 @@ export default function ChatPage() {
           content: text,
         });
 
-        // 2. Run the Memory Intelligence Pipeline
-        //    Detect intent → Retrieve memories → Analyze patterns → Build context
-        let pipelineResult: PipelineResult | null = null;
-        try {
-          setIsAnalyzing(true);
-          pipelineResult = await pipeline.process(user.uid, text, aiPersona as AiPersona);
-        } catch (e) {
-          console.warn('[EchoOS] Pipeline failed, continuing without context:', e);
-        } finally {
-          setIsAnalyzing(false);
-        }
-
-        // 3. Build message history for Groq (last ~6 turns)
+        // 2. Build history from previous messages (last ~6 turns)
         const history = messages.slice(-6).map((m) => ({
           role: m.role as 'user' | 'assistant',
           content: m.content,
         }));
 
-        // 4. First Groq call — with tools available + memory intelligence
-        const systemContent = pipelineResult
-          ? pipelineResult.systemPrompt + buildToolInstructions()
-          : buildFallbackPrompt(aiPersona);
-
-        const allMessages = [
-          { role: 'system' as const, content: systemContent },
-          ...history,
-          { role: 'user' as const, content: text },
-        ];
-
-        // Collect metadata locally during the first pass (avoids stale closure)
+        // 3. First pass: Memory Pipeline + streaming with tools
+        setIsAnalyzing(true);
         let firstMeta: Partial<StreamEvent> = {};
 
-        const firstPass = await streamChatWithTools({
-          messages: allMessages,
+        const firstPass = await streamChatWithPipeline({
+          text,
+          uid: user.uid,
+          persona: aiPersona as AiPersona,
+          history,
           tools: TOOL_SCHEMAS,
           onDelta: (delta) => {
             setStreamingText((prev) => prev + delta);
@@ -192,18 +169,23 @@ export default function ChatPage() {
             firstMeta = { ...firstMeta, ...meta };
             setLastMeta(firstMeta);
           },
+          onPipelineResult: () => {
+            setIsAnalyzing(false);
+          },
         });
 
-        // 5. If no tool calls, the first pass is the final answer
+        setIsAnalyzing(false);
+
+        // 4. If no tool calls, the first pass is the final answer
         if (firstPass.toolCalls.length === 0) {
-          const cleanText = stripMetaBlock(firstPass.text);
+          const cleanText = stripMetaBlock(firstPass.responseText);
           const assistantMsg: ChatMessageType = {
             id: `ai-${Date.now()}`,
             role: 'assistant',
             content: cleanText,
             createdAt: Date.now(),
             reasoning: firstMeta.reasoning,
-            confidence: pipelineResult?.confidence.overall ?? firstMeta.confidence,
+            confidence: firstPass.pipelineResult.confidence.overall ?? firstMeta.confidence,
             suggestionChips: firstMeta.suggestionChips ?? [],
             referencedMemoryIds: firstMeta.referencedMemoryIds,
           };
@@ -223,28 +205,33 @@ export default function ChatPage() {
 
         // 5. Execute tools client-side
         setIsExecutingTools(true);
-        setStreamingText(''); // Clear any partial text from the tool-calling pass
+        setStreamingText('');
 
         const batch = await executeToolCalls(firstPass.toolCalls, {
           uid: user.uid,
           invalidateQueries: invalidateForTools,
         });
 
-        // Show live action cards while the final reply streams
         setLiveActions(batch.actions);
         setIsExecutingTools(false);
 
-        // 6. Second Groq call — with tool results + action summary
+        // 6. Build follow-up messages with tool results
         const toolSummary = batch.actions
           .map((a) => `${a.verb} ${a.title}`)
           .join('. ');
 
+        const systemContent = firstPass.pipelineResult.systemPrompt + buildToolInstructions();
+        const baseHistory = [
+          { role: 'system' as const, content: systemContent },
+          ...history,
+          { role: 'user' as const, content: text },
+        ];
+
         const followUpMessages = [
-          ...allMessages,
-          // Include the model's tool_calls as an assistant message
+          ...baseHistory,
           {
             role: 'assistant' as const,
-            content: firstPass.text || `[Calling tools: ${firstPass.toolCalls.map((t) => t.name).join(', ')}]`,
+            content: firstPass.responseText || `[Calling tools: ${firstPass.toolCalls.map((t) => t.name).join(', ')}]`,
             tool_calls: firstPass.toolCalls.map((tc) => ({
               id: tc.id,
               type: 'function' as const,
@@ -254,14 +241,12 @@ export default function ChatPage() {
               },
             })),
           },
-          // Tool results as tool-role messages
           ...batch.toolMessages.map((tm) => ({
             role: 'tool' as const,
             content: tm.content,
             tool_call_id: tm.tool_call_id,
             name: tm.name,
           })),
-          // Nudge for the natural reply
           {
             role: 'user' as const,
             content:
@@ -271,7 +256,7 @@ export default function ChatPage() {
           },
         ];
 
-        // 7. Stream the final reply (no tools — just text)
+        // 7. Stream the final reply (no tools)
         let finalText = '';
         let finalMeta: Partial<StreamEvent> = {};
 
@@ -287,7 +272,7 @@ export default function ChatPage() {
           },
         );
 
-        // 9. Build and save the complete assistant message
+        // 8. Build and save the complete assistant message
         const cleanFinalText = stripMetaBlock(finalText);
         const assistantMsg: ChatMessageType = {
           id: `ai-${Date.now()}`,
@@ -296,7 +281,7 @@ export default function ChatPage() {
           createdAt: Date.now(),
           actions: batch.actions,
           reasoning: finalMeta.reasoning,
-          confidence: pipelineResult?.confidence.overall ?? finalMeta.confidence,
+          confidence: firstPass.pipelineResult.confidence.overall ?? finalMeta.confidence,
           suggestionChips: finalMeta.suggestionChips ?? [],
           referencedMemoryIds: finalMeta.referencedMemoryIds,
         };
@@ -475,29 +460,4 @@ export default function ChatPage() {
       </div>
     </>
   );
-}
-
-// ── Fallback prompt (used only when the MemoryPipeline fails) ────
-// The pipeline's buildSystemPrompt provides the full intelligence context
-// (user profile, patterns, confidence, intent guidance). This fallback
-// is a minimal safety net that still includes tool instructions.
-
-const PERSONA_INSTRUCTIONS: Record<string, string> = {
-  default: 'Be warm, personal, and insightful — like a close friend who remembers everything about their life.',
-  witty: 'Be quick with humor and clever observations. A light, playful tone that keeps things fun while staying personal.',
-  analytical: 'Be data-driven, precise, and structured. Focus on patterns, statistics, and clear evidence-based reasoning.',
-  enthusiastic: 'Be energetic and genuinely delighted by their memories. Use warmth and excitement without being fake.',
-  minimalist: 'Be short, direct, and efficient. Give the answer with minimal fluff while still referencing their memories.',
-};
-
-function buildFallbackPrompt(persona: string = 'default'): string {
-  return [
-    '=== IDENTITY ===',
-    'You are EchoOS — the user\'s private AI Memory Operating System.',
-    'Your entire purpose is to know the user deeply from their stored memories and help them understand their own life.',
-    '',
-    PERSONA_INSTRUCTIONS[persona] || PERSONA_INSTRUCTIONS.default,
-    '',
-    buildToolInstructions(),
-  ].join('\n');
 }

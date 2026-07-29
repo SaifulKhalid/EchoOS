@@ -14,14 +14,9 @@ import { auth } from '@/firebase/config';
 import { API_BASE_URL } from '@/config/env';
 import { GROQ_MODELS } from '@/config/constants';
 import type { AiPersona } from '@/hooks/usePreferences';
-import type { MemoryBundle, PipelineResult, IntentResult } from '@/memory';
-import type { MemoryCategory } from '@/config/constants';
+import type { PipelineResult } from '@/memory';
 import {
   MemoryPipeline,
-  retrieveMemories as memoryRetrieveMemories,
-  buildStructuredContext,
-  analyzePatterns,
-  generateWelcomeChips,
   type ProcessedResponse,
 } from '@/memory';
 import { ToolCallAccumulator } from '@/services/tools/parseTools';
@@ -61,47 +56,6 @@ export interface StreamEvent {
   tool_calls?: ForwardedToolCallDelta[];
   /** Why the stream stopped — 'tool_calls' means tools need executing. */
   finish_reason?: string;
-}
-
-// ── Re-export MemoryBundle for backward compatibility ───────
-
-export type { MemoryBundle };
-
-// ── Deprecated legacy API (delegates to memory/ layer) ──────
-
-/** @deprecated Use `MemoryPipeline` from `@/memory` instead. */
-export { computeMemoryInsights, formatInsights } from './_legacy';
-
-/**
- * @deprecated Use the MemoryPipeline class directly.
- * Fetches all memories. Prefer retrieveMemories with specific categories.
- */
-export async function fetchUserMemories(uid: string): Promise<MemoryBundle> {
-  const result = await memoryRetrieveMemories(uid, {
-    categories: ['movie', 'food', 'travel', 'note', 'wishlist'],
-    limitPerCategory: 50,
-  });
-  return result.memories;
-}
-
-/**
- * @deprecated Use `buildStructuredContext` from `@/memory` instead.
- * Builds a plain-text context block from memories + computed insights.
- */
-export function buildContext(memories: MemoryBundle): string {
-  const intent = { intent: 'general_conversation' as const, categories: ['movie', 'food', 'travel', 'note', 'wishlist'] as MemoryCategory[], confidence: 0.5 } as IntentResult;
-  const patterns = analyzePatterns(memories);
-  const retrieval = { memories, totalCount: 0, categoryCounts: { movie: 0, food: 0, travel: 0, note: 0, wishlist: 0 } };
-  const ctx = buildStructuredContext(intent, retrieval, patterns);
-  return ctx.formatted;
-}
-
-/**
- * @deprecated Use MemoryPipeline.process() which includes intent detection.
- * Builds the full system prompt with memory context.
- */
-export function buildSystemPrompt(context: string, persona: AiPersona = 'default'): string {
-  return MemoryPipeline._buildSystemPromptFallback(context, persona);
 }
 
 // ── Memory Pipeline singleton ──────────────────────────────
@@ -324,6 +278,10 @@ export interface StreamWithPipelineOptions {
   onMetadata?: (meta: Partial<StreamEvent>) => void;
   /** Callback when the full pipeline result is available (before streaming). */
   onPipelineResult?: (result: PipelineResult) => void;
+  /** Optional tool schemas for function calling. */
+  tools?: ToolSchema[];
+  /** Optional callback when tool-call deltas arrive. */
+  onToolDelta?: () => void;
 }
 
 export interface StreamWithPipelineResult {
@@ -333,6 +291,10 @@ export interface StreamWithPipelineResult {
   pipelineResult: PipelineResult;
   /** The post-processed response with metadata. */
   processed: ProcessedResponse;
+  /** Fully-assembled tool calls (only when tools were provided). */
+  toolCalls: ToolCall[];
+  /** Why the model stopped ('tool_calls' | 'stop' | …). */
+  finishReason: string | null;
 }
 
 /**
@@ -354,6 +316,8 @@ export async function streamChatWithPipeline(
     onDelta,
     onMetadata,
     onPipelineResult,
+    tools,
+    onToolDelta,
   } = options;
 
   // STEP 1–4: Run the intelligence pipeline
@@ -371,16 +335,35 @@ export async function streamChatWithPipeline(
   }
   messages.push({ role: 'user', content: text });
 
-  // Stream the response from Groq
-  const rawResponse = await streamChat(
-    messages,
-    onDelta,
-    (meta) => {
-      onMetadata?.(meta);
-    },
-    model,
-    persona,
-  );
+  let rawResponse: string;
+  let toolCalls: ToolCall[] = [];
+  let finishReason: string | null = null;
+
+  if (tools && tools.length > 0) {
+    // Use tool-calling stream
+    const result = await streamChatWithTools({
+      messages,
+      tools,
+      onDelta,
+      onToolDelta,
+      onMetadata,
+      model,
+    });
+    rawResponse = result.text;
+    toolCalls = result.toolCalls;
+    finishReason = result.finishReason;
+  } else {
+    // Standard streaming
+    rawResponse = await streamChat(
+      messages,
+      onDelta,
+      (meta) => {
+        onMetadata?.(meta);
+      },
+      model,
+      persona,
+    );
+  }
 
   // STEP 5: Post-process the response
   const processed = pipeline.postProcess(rawResponse, pipelineResult);
@@ -389,18 +372,7 @@ export async function streamChatWithPipeline(
     responseText: rawResponse,
     pipelineResult,
     processed,
+    toolCalls,
+    finishReason,
   };
-}
-
-/**
- * Generate welcome chips for the empty-state view.
- * @deprecated Use `suggestionGenerator.generateWelcomeChips` directly.
- */
-export async function getWelcomeSuggestions(uid: string): Promise<string[]> {
-  const result = await memoryRetrieveMemories(uid, {
-    categories: ['movie', 'food', 'travel', 'note', 'wishlist'],
-    limitPerCategory: 5,
-  });
-  const patterns = analyzePatterns(result.memories);
-  return generateWelcomeChips(patterns);
 }

@@ -19,7 +19,6 @@ README.md
 .firebase
 firebase.json
 firestore.*
-storage.rules
 
 # Test infra — not needed for production build
 vitest.config.ts

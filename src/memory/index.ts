@@ -34,7 +34,7 @@ import { analyzePatterns, type PatternAnalysis } from './patternAnalyzer';
 import { buildStructuredContext, type StructuredContext } from './contextBuilder';
 import { calculateConfidence, formatConfidenceAnnotation, type ConfidenceResult } from './confidenceCalculator';
 import { formatReasoning, formatReasoningBlock, type ReasoningBlock } from './reasoningFormatter';
-import { generateSuggestions, generateWelcomeChips } from './suggestionGenerator';
+import { generateSuggestions } from './suggestionGenerator';
 import { processResponse } from './responseFormatter';
 
 // ── Re-exports ─────────────────────────────────────────────
@@ -89,7 +89,6 @@ export {
   formatReasoning,
   formatReasoningBlock,
   generateSuggestions,
-  generateWelcomeChips,
   processResponse,
 };
 
@@ -294,38 +293,5 @@ export class MemoryPipeline {
     );
 
     return processed;
-  }
-
-  /**
-   * Generate welcome chips for the empty-state view (no conversation yet).
-   */
-  getWelcomeChips(patterns: PatternAnalysis): string[] {
-    return generateWelcomeChips(patterns);
-  }
-
-  /**
-   * Static fallback for backward compatibility.
-   * Builds a system prompt from a plain-text context string without
-   * the full pipeline (no intent detection, no confidence annotation).
-   *
-   * @deprecated Use the instance method process() instead.
-   */
-  static _buildSystemPromptFallback(
-    context: string,
-    persona: AiPersona = 'default',
-  ): string {
-    const defaultConfidence = {
-      overall: 0.3,
-      perCategory: {} as Record<string, number>,
-      reasoning: 'Limited data',
-      sufficient: false,
-      gaps: ['No pipeline data'],
-    };
-
-    return buildSystemPrompt(context, defaultConfidence as ConfidenceResult, {
-      intent: 'general_conversation',
-      categories: [],
-      confidence: 0.3,
-    } as IntentResult, persona);
   }
 }

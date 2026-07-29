@@ -49,6 +49,11 @@ export interface PatternAnalysis {
     favoriteDirectors: string[];
     favoriteActors: string[];
     favoriteDishes: string[];
+    topLanguages: NamedCount[];
+    avgMealPrice: number | null;
+    totalBudget: number;
+    avgTripDuration: number | null;
+    totalTripDays: number;
     averageYearlyActivity: number;
     mostActiveCategory: MemoryCategory | null;
     highestRatedMovie: { title: string; rating: number } | null;
@@ -72,6 +77,8 @@ export interface PatternAnalysis {
     diningFrequency: string;
     rewatchRate: number;
     wishlistCompletionRate: number;
+    wishlistDone: number;
+    wishlistTotal: number;
     averageTripsPerYear: number;
     averageMoviesPerYear: number;
   };
@@ -90,6 +97,7 @@ export interface PatternAnalysis {
     ratingDistribution: RatingDistribution[];
     moodDistribution: NamedCount[];
     yearDistribution: { year: number; count: number }[];
+    monthlyActivity: { month: number; count: number }[];
   };
 
   /** Recent activity snapshot. */
@@ -237,6 +245,18 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
 
+  // ── Top languages (movies) ────────────────────────────────
+  const langCounts = new Map<string, number>();
+  for (const m of movies) {
+    if (m.language) {
+      langCounts.set(m.language, (langCounts.get(m.language) ?? 0) + 1);
+    }
+  }
+  const topLanguages = [...langCounts.entries()]
+    .map(([name, count]) => ({ name: name.toUpperCase(), count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   // ── Favorite directors & actors ──────────────────────────
   const directorCounts = new Map<string, number>();
   const actorCounts = new Map<string, number>();
@@ -269,6 +289,22 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([name]) => name);
+
+  // ── Average meal price ────────────────────────────────────
+  const pricedMeals = food.filter((f) => f.price != null);
+  const avgMealPrice =
+    pricedMeals.length > 0
+      ? pricedMeals.reduce((s, f) => s + (f.price ?? 0), 0) / pricedMeals.length
+      : null;
+
+  // ── Travel budget & duration ──────────────────────────────
+  const totalBudget = travel.reduce((s, t) => s + (t.budget ?? 0), 0);
+  const tripsWithDuration = travel.filter((t) => t.durationDays != null);
+  const avgTripDuration =
+    tripsWithDuration.length > 0
+      ? tripsWithDuration.reduce((s, t) => s + (t.durationDays ?? 0), 0) / tripsWithDuration.length
+      : null;
+  const totalTripDays = travel.reduce((s, t) => s + (t.durationDays ?? 0), 0);
 
   // ── Oldest & newest memories ─────────────────────────────
   const sortedByDate = [...allEntries].sort(
@@ -325,6 +361,25 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
     .map(([year, count]) => ({ year, count }))
     .sort((a, b) => a.year - b.year);
 
+  // ── Monthly activity (current year) ───────────────────────
+  const currentYear = new Date().getFullYear();
+  const monthlyCounts = new Map<number, number>();
+  for (let i = 0; i < 12; i++) monthlyCounts.set(i, 0);
+  for (const e of allEntries) {
+    const raw = (e as Record<string, unknown>).watchDate ?? (e as Record<string, unknown>).date ?? (e as Record<string, unknown>).startDate ?? null;
+    const ts = raw != null ? getTimestamp(raw) : 0;
+    if (ts > 0) {
+      const d = new Date(ts);
+      if (d.getFullYear() === currentYear) {
+        monthlyCounts.set(d.getMonth(), (monthlyCounts.get(d.getMonth()) ?? 0) + 1);
+      }
+    }
+  }
+  const monthlyActivity = Array.from({ length: 12 }, (_, i) => ({
+    month: i,
+    count: monthlyCounts.get(i) ?? 0,
+  }));
+
   // ── Average yearly activity ──────────────────────────────
   const yearsWithData = yearDistribution.length;
   const averageYearlyActivity = yearsWithData > 0
@@ -363,10 +418,11 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
       : 0;
 
   // ── Wishlist completion rate ─────────────────────────────
-  const completedWishlist = wishlist.filter((w) => w.done).length;
+  const wishlistDone = wishlist.filter((w) => w.done).length;
+  const wishlistTotal = wishlist.length;
   const wishlistCompletionRate =
-    wishlist.length > 0
-      ? Math.round((completedWishlist / wishlist.length) * 100)
+    wishlistTotal > 0
+      ? Math.round((wishlistDone / wishlistTotal) * 100)
       : 0;
 
   // ── Average trips & movies per year ─────────────────────
@@ -585,6 +641,11 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
       favoriteDirectors,
       favoriteActors,
       favoriteDishes,
+      topLanguages,
+      avgMealPrice,
+      totalBudget,
+      avgTripDuration,
+      totalTripDays,
       averageYearlyActivity,
       mostActiveCategory,
       highestRatedMovie,
@@ -604,6 +665,8 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
       diningFrequency,
       rewatchRate,
       wishlistCompletionRate,
+      wishlistDone,
+      wishlistTotal,
       averageTripsPerYear,
       averageMoviesPerYear,
     },
@@ -618,6 +681,7 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
       ratingDistribution,
       moodDistribution,
       yearDistribution,
+      monthlyActivity,
     },
     recentActivity: {
       last7Days,
