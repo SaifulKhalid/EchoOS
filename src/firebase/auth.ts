@@ -3,6 +3,7 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signInAnonymously,
+  signInWithEmailAndPassword,
   signOut as fbSignOut,
   onAuthStateChanged,
   linkWithRedirect,
@@ -65,6 +66,16 @@ export function signInWithGoogle(): Promise<void> {
 
 export async function signInAsGuest(): Promise<User> {
   const cred = await signInAnonymously(auth);
+  await ensureUserProfile(cred.user);
+  return cred.user;
+}
+
+/**
+  * Development-only debug email sign in.
+  * Uses ONLY signInWithEmailAndPassword; never creates users automatically.
+  */
+export async function signInWithEmail(email: string, pass: string): Promise<User> {
+  const cred = await signInWithEmailAndPassword(auth, email, pass);
   await ensureUserProfile(cred.user);
   return cred.user;
 }

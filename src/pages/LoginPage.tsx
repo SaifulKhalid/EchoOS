@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import { signInWithGoogle, signInAsGuest, handleRedirectResult } from '@/firebase/auth';
+import { signInWithGoogle, signInAsGuest, signInWithEmail, handleRedirectResult } from '@/firebase/auth';
 import { Logo } from '@/components/layout/Logo';
 import { IconGoogle, IconSparkle } from '@/components/ui/icons';
 import { APP_TAGLINE, ROUTES } from '@/config/constants';
@@ -13,12 +13,17 @@ const HIGHLIGHTS = [
   'Answers from your life, with its reasoning shown',
 ];
 
+const isDev = import.meta.env.DEV === true;
+
 export function LoginPage() {
   const { user, loading, configured } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [busy, setBusy] = useState<null | 'google' | 'guest'>(null);
+  const [busy, setBusy] = useState<null | 'google' | 'guest' | 'email'>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [debugEmail, setDebugEmail] = useState('debug@log.in');
+  const [debugPassword, setDebugPassword] = useState(() => import.meta.env.VITE_DEBUG_PASSWORD ?? 'debug@log.in');
 
   // Process the redirect result after Google sign-in redirects back
   useEffect(() => {
@@ -46,6 +51,29 @@ export function LoginPage() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed. Please try again.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runEmailLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy('email');
+    try {
+      const u = await signInWithEmail(debugEmail, debugPassword);
+      if (u) {
+        navigate(targetPath, { replace: true });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Authentication failed';
+      if (msg.includes('auth/invalid-credential') || msg.includes('auth/wrong-password') || msg.includes('auth/user-not-found')) {
+        setError('Invalid email or password. Please verify the debug credentials in Firebase.');
+      } else if (msg.includes('auth/network-request-failed')) {
+        setError('Network request failed. Please check your internet connection.');
+      } else {
+        setError(`Sign-in error: ${msg}`);
+      }
     } finally {
       setBusy(null);
     }
@@ -137,6 +165,56 @@ export function LoginPage() {
             🚀 Explore Competition Demo Mode
           </button>
         </div>
+
+        {isDev && (
+          <div className="mt-6 border-t border-white/10 pt-5">
+            <div className="relative mb-4 flex items-center justify-center text-xs uppercase tracking-widest text-white/40">
+              <span className="bg-ink-950 px-2 font-mono text-[10px]">──────────── OR ────────────</span>
+            </div>
+
+            <form onSubmit={runEmailLogin} className="space-y-3 text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-accent-soft">
+                  Developer Login
+                </span>
+                <span className="rounded bg-accent/20 px-1.5 py-0.5 font-mono text-[9px] text-accent-soft">
+                  DEV ONLY
+                </span>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[11px] text-white/60">Email</label>
+                <input
+                  type="email"
+                  value={debugEmail}
+                  onChange={(e) => setDebugEmail(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-accent/40 focus:bg-white/10"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[11px] text-white/60">Password</label>
+                <input
+                  type="password"
+                  value={debugPassword}
+                  onChange={(e) => setDebugPassword(e.target.value)}
+                  required
+                  placeholder="Set VITE_DEBUG_PASSWORD in .env.local"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-accent/40 focus:bg-white/10"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={!!busy || !configured}
+                className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 text-xs font-medium text-white transition-colors hover:bg-white/15 disabled:opacity-50"
+              >
+                {busy === 'email' ? 'Signing In…' : 'Sign In'}
+              </button>
+            </form>
+          </div>
+        )}
 
         <p className="mt-6 text-center text-xs text-white/55">
           Demo Mode preloads realistic sample memories for instant AI evaluation.
