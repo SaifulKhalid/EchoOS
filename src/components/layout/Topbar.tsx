@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { signOut } from '@/firebase/auth';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { IconLogout, IconSparkle } from '@/components/ui/icons';
 
 export function Topbar() {
   const { user } = useAuth();
+  const { triggerDemoMode, isSeeding } = useDemoMode();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -66,6 +68,20 @@ export function Topbar() {
                   {user?.email ?? (user?.isAnonymous ? 'Anonymous mode' : '')}
                 </p>
               </div>
+
+              <button
+                role="menuitem"
+                onClick={async () => {
+                  setOpen(false);
+                  await triggerDemoMode();
+                }}
+                disabled={isSeeding}
+                className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-accent-soft transition-colors hover:bg-white/5"
+              >
+                <IconSparkle width={16} height={16} />
+                {isSeeding ? 'Seeding Demo...' : 'Load Demo Sample Data'}
+              </button>
+
               <button
                 role="menuitem"
                 onClick={() => {

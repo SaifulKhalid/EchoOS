@@ -17,6 +17,7 @@ export const ROUTES = {
   travel: '/travel',
   notes: '/notes',
   wishlist: '/wishlist',
+  goals: '/goals',
   search: '/search',
   analytics: '/analytics',
   settings: '/settings',
@@ -30,6 +31,7 @@ export const MEMORY_CATEGORIES = [
   'travel',
   'note',
   'wishlist',
+  'goal',
 ] as const;
 
 export type MemoryCategory = (typeof MEMORY_CATEGORIES)[number];
@@ -85,11 +87,12 @@ export const TIMELINE_CATEGORY_META: Record<string, { icon: string; label: strin
   travel: { icon: '✈️', label: 'Travel', color: 'bg-mood-calm/15 text-mood-calm border-mood-calm/20' },
   note: { icon: '💭', label: 'Note', color: 'bg-mood-awe/15 text-mood-awe border-mood-awe/20' },
   wishlist: { icon: '⭐', label: 'Wishlist', color: 'bg-mood-neutral/15 text-mood-neutral border-mood-neutral/20' },
+  goal: { icon: '🎯', label: 'Goal', color: 'bg-accent/20 text-accent-soft border-accent/30' },
 };
 
 /** Firestore collection names used for data export. */
 export const EXPORT_COLLECTIONS = [
-  'movies', 'food', 'travel', 'notes', 'wishlist',
+  'movies', 'food', 'travel', 'notes', 'wishlist', 'goals',
   'chats', 'reminders', 'notifications',
 ] as const;
 

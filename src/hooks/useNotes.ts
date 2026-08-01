@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
-import * as noteService from '@/services/firestore/notes';
+import { getRepository } from '@/services/memory';
 import type { NoteEntry } from '@/types';
+
+const noteRepo = getRepository<NoteEntry>('note');
 
 /** Query all notes for the current user. */
 export function useNotes() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['notes', user?.uid],
-    queryFn: () => noteService.fetchNotes(user!.uid),
+    queryFn: () => noteRepo.fetchAll(user!.uid),
     enabled: !!user?.uid,
   });
 }
@@ -19,7 +21,7 @@ export function useAddNote() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Omit<NoteEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
-      noteService.addNote(user!.uid, data),
+      noteRepo.add(user!.uid, data),
     onMutate: async (newData) => {
       await queryClient.cancelQueries({ queryKey: ['notes', user?.uid] });
       const previous = queryClient.getQueryData(['notes', user?.uid]);
@@ -51,7 +53,7 @@ export function useUpdateNote() {
     }: {
       id: string;
       data: Partial<Omit<NoteEntry, 'id' | 'createdAt' | 'updatedAt'>>;
-    }) => noteService.updateNote(user!.uid, id, data),
+    }) => noteRepo.update(user!.uid, id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['notes', user?.uid] });
       const previous = queryClient.getQueryData(['notes', user?.uid]);
@@ -76,7 +78,7 @@ export function useDeleteNote() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => noteService.deleteNote(user!.uid, id),
+    mutationFn: (id: string) => noteRepo.delete(user!.uid, id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['notes', user?.uid] });
       const previous = queryClient.getQueryData(['notes', user?.uid]);

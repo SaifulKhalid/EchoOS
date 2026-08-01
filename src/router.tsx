@@ -20,6 +20,7 @@ const FoodPage = lazy(() => import('@/pages/FoodPage'));
 const TravelPage = lazy(() => import('@/pages/TravelPage'));
 const NotesPage = lazy(() => import('@/pages/NotesPage'));
 const WishlistPage = lazy(() => import('@/pages/WishlistPage'));
+const GoalsPage = lazy(() => import('@/pages/GoalsPage'));
 const SearchPage = lazy(() => import('@/pages/SearchPage'));
 const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.travel, element: <TravelPage /> },
       { path: ROUTES.notes, element: <NotesPage /> },
       { path: ROUTES.wishlist, element: <WishlistPage /> },
+      { path: ROUTES.goals, element: <GoalsPage /> },
       { path: ROUTES.search, element: <SearchPage /> },
       { path: ROUTES.analytics, element: <AnalyticsPage /> },
       { path: ROUTES.settings, element: <SettingsPage /> },

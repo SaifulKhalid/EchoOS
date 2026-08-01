@@ -4,6 +4,7 @@ import { useFood } from './useFood';
 import { useTravel } from './useTravel';
 import { useNotes } from './useNotes';
 import { useWishlist } from './useWishlist';
+import { useGoals } from './useGoals';
 import { analyzePatterns } from '@/memory';
 import type { MoodId, MemoryCategory } from '@/config/constants';
 
@@ -33,11 +34,12 @@ export function useAnalytics() {
   const travel = useTravel();
   const notes = useNotes();
   const wishlist = useWishlist();
+  const goals = useGoals();
 
   const isLoading =
-    movies.isLoading || food.isLoading || travel.isLoading || notes.isLoading || wishlist.isLoading;
+    movies.isLoading || food.isLoading || travel.isLoading || notes.isLoading || wishlist.isLoading || goals.isLoading;
 
-  const error = movies.error || food.error || travel.error || notes.error || wishlist.error;
+  const error = movies.error || food.error || travel.error || notes.error || wishlist.error || goals.error;
 
   const data = useMemo<AnalyticsData>(() => {
     const movieData = movies.data ?? [];
@@ -45,6 +47,7 @@ export function useAnalytics() {
     const travelData = travel.data ?? [];
     const noteData = notes.data ?? [];
     const wishlistData = wishlist.data ?? [];
+    const goalData = goals.data ?? [];
 
     const patterns = analyzePatterns({
       movies: movieData,
@@ -52,6 +55,7 @@ export function useAnalytics() {
       travel: travelData,
       notes: noteData,
       wishlist: wishlistData,
+      goals: goalData,
     });
 
     const { userProfile, frequencies, distributions } = patterns;

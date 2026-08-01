@@ -56,6 +56,24 @@ export function FoodCard({
         )}
       </div>
 
+      {entry.companions && entry.companions.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {entry.companions.slice(0, 3).map((comp) => (
+            <span
+              key={comp}
+              className="rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] text-accent-soft"
+            >
+              with {comp}
+            </span>
+          ))}
+          {entry.companions.length > 3 && (
+            <span className="text-[10px] text-white/55">
+              +{entry.companions.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
       {entry.favoriteDishes && entry.favoriteDishes.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1">
           {entry.favoriteDishes.slice(0, 2).map((dish) => (

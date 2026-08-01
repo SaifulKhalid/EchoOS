@@ -56,6 +56,7 @@ export interface FoodEntry extends BaseEntry {
   rating?: number;
   photos?: string[];
   favoriteDishes?: string[];
+  companions?: string[];
   date?: FireDate;
   notes?: string;
   favorite?: boolean;
@@ -74,6 +75,7 @@ export interface TravelEntry extends BaseEntry {
   companions?: string[];
   favoriteMoments?: string[];
   rating?: number; // user rating 0–10
+  status?: 'planned' | 'completed' | 'cancelled';
   favorite?: boolean;
 }
 
@@ -91,6 +93,25 @@ export interface WishlistEntry extends BaseEntry {
   title: string;
   note?: string;
   done?: boolean;
+}
+
+// ── Goals ───────────────────────────────────────────────────
+export interface GoalCheckIn {
+  date: FireDate;
+  notes?: string;
+  completed: boolean;
+}
+
+export interface GoalEntry extends BaseEntry {
+  title: string;
+  description?: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  targetCount?: number;
+  checkIns?: GoalCheckIn[];
+  streak: number;
+  completionRate: number; // 0-100%
+  status: 'active' | 'completed' | 'paused' | 'archived';
+  category?: MemoryCategory;
 }
 
 // ── Unified timeline index (denormalized for cheap 1-query reads) ──
@@ -178,6 +199,8 @@ export interface UserProfile {
   photoURL: string | null;
   isAnonymous: boolean;
   createdAt: FireDate;
+  lastVisit?: FireDate;
+  previousVisit?: FireDate;
   settings?: {
     theme?: 'dark' | 'light';
     aiPersona?: string;

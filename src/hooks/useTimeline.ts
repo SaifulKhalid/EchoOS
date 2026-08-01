@@ -4,6 +4,7 @@ import { useFood } from './useFood';
 import { useTravel } from './useTravel';
 import { useNotes } from './useNotes';
 import { useWishlist } from './useWishlist';
+import { useGoals } from './useGoals';
 import { dateToMillis } from '@/utils/dates';
 import type { MoodId, MemoryCategory } from '@/config/constants';
 
@@ -125,15 +126,27 @@ function normalize(entry: Record<string, unknown>, type: MemoryCategory): Timeli
       };
     }
 
+    case 'goal': {
+      const date = dateToMillis(entry.createdAt as Parameters<typeof dateToMillis>[0]) ?? 0;
+      return {
+        key: `goal-${refId}`,
+        type,
+        refId,
+        date,
+        title: entry.title as string,
+        subtitle: `Goal (${entry.frequency}) · Streak ${entry.streak ?? 0}d`,
+        preview: entry.description as string | undefined,
+      };
+    }
+
     default:
       return null;
   }
 }
 
 /**
- * Fetches all 5 memory collections in parallel and returns a flat,
+ * Fetches all memory collections in parallel and returns a flat,
  * chronologically-sorted array of TimelineEntry objects.
- * Only entries with a valid date are included.
  */
 export function useTimeline() {
   const movies = useMovies();
@@ -141,10 +154,12 @@ export function useTimeline() {
   const travel = useTravel();
   const notes = useNotes();
   const wishlist = useWishlist();
+  const goals = useGoals();
 
-  const isLoading = movies.isLoading || food.isLoading || travel.isLoading || notes.isLoading || wishlist.isLoading;
+  const isLoading =
+    movies.isLoading || food.isLoading || travel.isLoading || notes.isLoading || wishlist.isLoading || goals.isLoading;
 
-  const error = movies.error || food.error || travel.error || notes.error || wishlist.error;
+  const error = movies.error || food.error || travel.error || notes.error || wishlist.error || goals.error;
 
   const entries = useMemo<TimelineEntry[]>(() => {
     const all: TimelineEntry[] = [];
@@ -169,10 +184,14 @@ export function useTimeline() {
       const e = normalize(w as unknown as Record<string, unknown>, 'wishlist');
       if (e && e.date > 0) all.push(e);
     }
+    for (const g of goals.data ?? []) {
+      const e = normalize(g as unknown as Record<string, unknown>, 'goal');
+      if (e && e.date > 0) all.push(e);
+    }
 
     all.sort((a, b) => b.date - a.date);
     return all;
-  }, [movies.data, food.data, travel.data, notes.data, wishlist.data]);
+  }, [movies.data, food.data, travel.data, notes.data, wishlist.data, goals.data]);
 
   return { entries, isLoading, error };
 }

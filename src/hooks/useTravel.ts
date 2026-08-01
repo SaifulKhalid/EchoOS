@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
-import * as travelService from '@/services/firestore/travel';
+import { getRepository } from '@/services/memory';
 import type { TravelEntry } from '@/types';
+
+const travelRepo = getRepository<TravelEntry>('travel');
 
 /** Query all travel entries for the current user. */
 export function useTravel() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['travel', user?.uid],
-    queryFn: () => travelService.fetchTravel(user!.uid),
+    queryFn: () => travelRepo.fetchAll(user!.uid),
     enabled: !!user?.uid,
   });
 }
@@ -19,7 +21,7 @@ export function useAddTravel() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Omit<TravelEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
-      travelService.addTravel(user!.uid, data),
+      travelRepo.add(user!.uid, data),
     onMutate: async (newData) => {
       await queryClient.cancelQueries({ queryKey: ['travel', user?.uid] });
       const previous = queryClient.getQueryData(['travel', user?.uid]);
@@ -51,7 +53,7 @@ export function useUpdateTravel() {
     }: {
       id: string;
       data: Partial<Omit<TravelEntry, 'id' | 'createdAt' | 'updatedAt'>>;
-    }) => travelService.updateTravel(user!.uid, id, data),
+    }) => travelRepo.update(user!.uid, id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['travel', user?.uid] });
       const previous = queryClient.getQueryData(['travel', user?.uid]);
@@ -76,7 +78,7 @@ export function useDeleteTravel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => travelService.deleteTravel(user!.uid, id),
+    mutationFn: (id: string) => travelRepo.delete(user!.uid, id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['travel', user?.uid] });
       const previous = queryClient.getQueryData(['travel', user?.uid]);

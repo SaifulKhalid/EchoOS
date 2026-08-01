@@ -38,9 +38,16 @@ export function TravelCard({
           <IconTravel width={18} height={18} />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white/90 group-hover:text-white">
-            {entry.destination}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-medium text-white/90 group-hover:text-white">
+              {entry.destination}
+            </p>
+            {entry.status === 'planned' && (
+              <span className="rounded-full bg-accent/20 border border-accent/30 px-1.5 py-0.5 text-[9px] font-semibold text-accent-soft">
+                PLANNED
+              </span>
+            )}
+          </div>
           <p className="truncate text-xs text-white/55">
             {formatDateRange(entry.startDate, entry.endDate)}
             {entry.durationDays ? ` · ${entry.durationDays} day${entry.durationDays !== 1 ? 's' : ''}` : ''}

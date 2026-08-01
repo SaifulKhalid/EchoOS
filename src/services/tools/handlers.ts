@@ -16,19 +16,11 @@
 import { searchMovies, getMovieDetails, extractCredits } from '@/services/tmdb/client';
 import { genreIdsToNames } from '@/services/tmdb/types';
 import { posterUrl, releaseYear } from '@/services/tmdb/images';
-import { addMovie, updateMovie, deleteMovie } from '@/services/firestore/movies';
-import { addFood, updateFood, deleteFood } from '@/services/firestore/food';
-import { addTravel, updateTravel, deleteTravel } from '@/services/firestore/travel';
-import { addNote, deleteNote } from '@/services/firestore/notes';
-import {
-  addWishlistItem,
-  updateWishlistItem,
-  deleteWishlistItem,
-} from '@/services/firestore/wishlist';
+import { getRepository } from '@/services/memory';
 import { retrieveMemories } from '@/memory';
 import { inputValueToMillis } from '@/utils/dates';
 import type { MemoryCategory, MoodId } from '@/config/constants';
-import type { MovieEntry, FoodEntry, TravelEntry, NoteEntry, WishlistEntry } from '@/types';
+import type { MovieEntry, FoodEntry, TravelEntry, NoteEntry, WishlistEntry, GoalEntry, GoalCheckIn } from '@/types';
 import type { ToolExecutionContext, ToolResult } from './types';
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -178,7 +170,7 @@ const addMovieHandler: Handler = async (args, ctx) => {
 
   let id: string;
   try {
-    id = await addMovie(ctx.uid, entry);
+    id = await getRepository<MovieEntry>('movie').add(ctx.uid, entry);
   } catch (e) {
     return fail('addMovie', `Failed to save movie: ${(e as Error).message}`);
   }
@@ -212,22 +204,32 @@ const logFoodHandler: Handler = async (args, ctx) => {
     price: asNumber(args.price),
     rating: clampRating(args.rating),
     favoriteDishes: asStringArray(args.dishes),
+    companions: asStringArray(args.companions),
     notes: asString(args.notes)?.slice(0, 2000),
     mood: asMood(args.mood),
     date: asDateMillis(args.date) ?? Date.now(),
-    tags: buildGenericTags(restaurant, asString(args.cuisine), asStringArray(args.dishes)),
+    tags: buildGenericTags(
+      restaurant,
+      asString(args.cuisine),
+      asStringArray(args.dishes),
+      asStringArray(args.companions),
+    ),
   };
 
   let id: string;
   try {
-    id = await addFood(ctx.uid, entry);
+    id = await getRepository<FoodEntry>('food').add(ctx.uid, entry);
   } catch (e) {
     return fail('logFood', `Failed to save food entry: ${(e as Error).message}`);
   }
 
   ctx.invalidateQueries([['food', ctx.uid], ['timeline']]);
 
-  const parts = [entry.cuisine, entry.rating != null ? `${entry.rating}/10` : undefined]
+  const parts = [
+    entry.cuisine,
+    entry.rating != null ? `${entry.rating}/10` : undefined,
+    entry.companions?.length ? `with ${entry.companions.join(', ')}` : undefined,
+  ]
     .filter(Boolean)
     .join(' · ');
   return ok('logFood', `Logged ${entry.restaurant}${parts ? ` · ${parts}` : ''}.`, {
@@ -235,6 +237,7 @@ const logFoodHandler: Handler = async (args, ctx) => {
     restaurant: entry.restaurant,
     cuisine: entry.cuisine,
     rating: entry.rating,
+    companions: entry.companions,
   });
 };
 
@@ -252,6 +255,10 @@ const logTravelHandler: Handler = async (args, ctx) => {
     durationDays = Math.max(1, Math.round((endMs - startMs) / 86_400_000) + 1);
   }
 
+  const rawStatus = asString(args.status)?.toLowerCase();
+  const status: TravelEntry['status'] =
+    rawStatus === 'planned' ? 'planned' : rawStatus === 'cancelled' ? 'cancelled' : 'completed';
+
   const entry: Omit<TravelEntry, 'id' | 'createdAt' | 'updatedAt'> = {
     destination,
     budget: asNumber(args.budget),
@@ -263,13 +270,14 @@ const logTravelHandler: Handler = async (args, ctx) => {
     notes: asString(args.notes)?.slice(0, 2000),
     favoriteMoments: asStringArray(args.favoriteMoments),
     rating: clampRating(args.rating),
+    status,
     mood: asMood(args.mood),
-    tags: buildGenericTags(destination, asStringArray(args.places)?.join(' ')),
+    tags: buildGenericTags(destination, asStringArray(args.places)?.join(' '), asStringArray(args.companions)),
   };
 
   let id: string;
   try {
-    id = await addTravel(ctx.uid, entry);
+    id = await getRepository<TravelEntry>('travel').add(ctx.uid, entry);
   } catch (e) {
     return fail('logTravel', `Failed to save trip: ${(e as Error).message}`);
   }
@@ -277,15 +285,16 @@ const logTravelHandler: Handler = async (args, ctx) => {
   ctx.invalidateQueries([['travel', ctx.uid], ['timeline']]);
 
   const parts = [
+    status === 'planned' ? 'Planned trip' : undefined,
     durationDays != null ? `${durationDays} day${durationDays !== 1 ? 's' : ''}` : undefined,
     entry.companions && entry.companions.length > 0
-      ? `with ${entry.companions.length}`
+      ? `with ${entry.companions.join(', ')}`
       : undefined,
-    entry.budget != null ? `budget ${entry.budget}` : undefined,
+    entry.budget != null ? `budget $${entry.budget}` : undefined,
   ]
     .filter(Boolean)
     .join(' · ');
-  return ok('logTravel', `Logged your trip to ${entry.destination}${parts ? ` · ${parts}` : ''}.`, {
+  return ok('logTravel', `Logged ${status === 'planned' ? 'planned trip' : 'trip'} to ${entry.destination}${parts ? ` · ${parts}` : ''}.`, {
     id,
     destination: entry.destination,
     durationDays,
@@ -294,6 +303,7 @@ const logTravelHandler: Handler = async (args, ctx) => {
     budget: entry.budget,
     companions: entry.companions,
     places: entry.places,
+    status,
   });
 };
 
@@ -318,7 +328,7 @@ const createNoteHandler: Handler = async (args, ctx) => {
 
   let id: string;
   try {
-    id = await addNote(ctx.uid, entry);
+    id = await getRepository<NoteEntry>('note').add(ctx.uid, entry);
   } catch (e) {
     return fail('createNote', `Failed to save note: ${(e as Error).message}`);
   }
@@ -351,7 +361,7 @@ const updateWishlistHandler: Handler = async (args, ctx) => {
 
   let id: string;
   try {
-    id = await addWishlistItem(ctx.uid, entry);
+    id = await getRepository<WishlistEntry>('wishlist').add(ctx.uid, entry);
   } catch (e) {
     return fail('updateWishlist', `Failed to add wishlist item: ${(e as Error).message}`);
   }
@@ -372,7 +382,7 @@ const markWishlistDoneHandler: Handler = async (args, ctx) => {
   if (!id) return fail('markWishlistDone', 'A wishlist item id is required.');
 
   try {
-    await updateWishlistItem(ctx.uid, id, { done: true });
+    await getRepository<WishlistEntry>('wishlist').update(ctx.uid, id, { done: true });
   } catch (e) {
     return fail('markWishlistDone', `Failed to update: ${(e as Error).message}`);
   }
@@ -389,15 +399,15 @@ const updateRatingHandler: Handler = async (args, ctx) => {
   if (!id) return fail('updateRating', 'An entry id is required.');
   if (rating == null) return fail('updateRating', 'A rating (0–10) is required.');
 
-  const key: MemoryCategory[] = ['movie', 'food', 'travel', 'note', 'wishlist'];
+  const key: MemoryCategory[] = ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'];
   if (!key.includes(category)) {
     return fail('updateRating', `Unknown category "${category}".`);
   }
 
   try {
-    if (category === 'movie') await updateMovie(ctx.uid, id, { rating });
-    else if (category === 'food') await updateFood(ctx.uid, id, { rating });
-    else if (category === 'travel') await updateTravel(ctx.uid, id, { rating });
+    if (category === 'movie') await getRepository<MovieEntry>('movie').update(ctx.uid, id, { rating });
+    else if (category === 'food') await getRepository<FoodEntry>('food').update(ctx.uid, id, { rating });
+    else if (category === 'travel') await getRepository<TravelEntry>('travel').update(ctx.uid, id, { rating });
     else return fail('updateRating', `Rating is not supported for ${category}.`);
   } catch (e) {
     return fail('updateRating', `Failed to update rating: ${(e as Error).message}`);
@@ -407,24 +417,177 @@ const updateRatingHandler: Handler = async (args, ctx) => {
   return ok('updateRating', `Set ${category} rating to ${rating}/10.`, { id, category, rating });
 };
 
-// ── 9. deleteEntry ──────────────────────────────────────────
+// ── 9. updateEntry (Generic Natural Edit) ─────────────────────
+
+const updateEntryHandler: Handler = async (args, ctx) => {
+  const category = asString(args.category)?.toLowerCase() as MemoryCategory;
+  const rawFields = (args.fields && typeof args.fields === 'object' ? args.fields : {}) as Record<string, unknown>;
+  let targetId = asString(args.id);
+
+  const valid: MemoryCategory[] = ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'];
+  if (!valid.includes(category)) {
+    return fail('updateEntry', `Invalid category "${category}".`);
+  }
+
+  // If targetId is omitted or "latest", fetch the newest entry in this category
+  if (!targetId || targetId === 'latest') {
+    const all = await getRepository(category).fetchAll(ctx.uid);
+    if (!all || all.length === 0) {
+      return fail('updateEntry', `No entries found in ${category} to update.`);
+    }
+    targetId = all[0].id;
+  }
+
+  const patchData: Record<string, unknown> = {};
+
+  if (rawFields.budget != null) patchData.budget = asNumber(rawFields.budget);
+  if (rawFields.price != null) patchData.price = asNumber(rawFields.price);
+  if (rawFields.rating != null) patchData.rating = clampRating(rawFields.rating);
+  if (rawFields.review != null) patchData.review = asString(rawFields.review)?.slice(0, 2000);
+  if (rawFields.notes != null) patchData.notes = asString(rawFields.notes)?.slice(0, 2000);
+  if (rawFields.restaurant != null) patchData.restaurant = asString(rawFields.restaurant);
+  if (rawFields.destination != null) patchData.destination = asString(rawFields.destination);
+  if (rawFields.title != null) patchData.title = asString(rawFields.title);
+  if (rawFields.cuisine != null) patchData.cuisine = asString(rawFields.cuisine);
+  if (rawFields.status != null) patchData.status = asString(rawFields.status);
+  if (rawFields.companions != null) patchData.companions = asStringArray(rawFields.companions);
+  if (rawFields.dishes != null) patchData.favoriteDishes = asStringArray(rawFields.dishes);
+  if (rawFields.places != null) patchData.places = asStringArray(rawFields.places);
+
+  if (Object.keys(patchData).length === 0) {
+    return fail('updateEntry', 'No valid fields provided for update.');
+  }
+
+  try {
+    await getRepository(category).update(ctx.uid, targetId, patchData);
+  } catch (e) {
+    return fail('updateEntry', `Failed to update ${category} entry: ${(e as Error).message}`);
+  }
+
+  ctx.invalidateQueries([[category, ctx.uid], ['timeline']]);
+  const updatedSummary = Object.entries(patchData)
+    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+    .join(', ');
+
+  return ok('updateEntry', `Updated ${category} entry (${updatedSummary}).`, {
+    id: targetId,
+    category,
+    updatedFields: patchData,
+  });
+};
+
+// ── 10. createGoal ──────────────────────────────────────────
+
+const createGoalHandler: Handler = async (args, ctx) => {
+  const title = asString(args.title)?.trim();
+  if (!title) return fail('createGoal', 'Goal title is required.');
+
+  const rawFreq = asString(args.frequency)?.toLowerCase();
+  const frequency: GoalEntry['frequency'] =
+    rawFreq === 'weekly' ? 'weekly' : rawFreq === 'monthly' ? 'monthly' : 'daily';
+
+  const entry: Omit<GoalEntry, 'id' | 'createdAt' | 'updatedAt'> = {
+    title,
+    description: asString(args.description),
+    frequency,
+    targetCount: asNumber(args.targetCount),
+    category: asString(args.category) as MemoryCategory | undefined,
+    streak: 0,
+    completionRate: 0,
+    status: 'active',
+    checkIns: [],
+    tags: buildGenericTags(title, asString(args.description)),
+  };
+
+  let id: string;
+  try {
+    id = await getRepository<GoalEntry>('goal').add(ctx.uid, entry);
+  } catch (e) {
+    return fail('createGoal', `Failed to create goal: ${(e as Error).message}`);
+  }
+
+  ctx.invalidateQueries([['goal', ctx.uid], ['timeline']]);
+
+  return ok('createGoal', `Created goal/habit: "${title}".`, {
+    id,
+    title,
+    frequency,
+    status: 'active',
+  });
+};
+
+// ── 11. logGoalCheckIn ──────────────────────────────────────
+
+const logGoalCheckInHandler: Handler = async (args, ctx) => {
+  let id = asString(args.id);
+  const titleQuery = asString(args.title)?.trim().toLowerCase();
+  const notes = asString(args.notes);
+  const completed = args.completed !== false;
+
+  const repo = getRepository<GoalEntry>('goal');
+  const allGoals = await repo.fetchAll(ctx.uid);
+
+  let targetGoal: GoalEntry | undefined;
+  if (id) {
+    targetGoal = allGoals.find((g) => g.id === id);
+  } else if (titleQuery) {
+    targetGoal = allGoals.find((g) => g.title.toLowerCase().includes(titleQuery));
+  }
+
+  if (!targetGoal) {
+    return fail('logGoalCheckIn', 'Goal not found. Create the goal first using createGoal.');
+  }
+
+  const newCheckIn: GoalCheckIn = {
+    date: Date.now(),
+    notes,
+    completed,
+  };
+
+  const updatedCheckIns = [...(targetGoal.checkIns ?? []), newCheckIn];
+  const newStreak = completed ? (targetGoal.streak ?? 0) + 1 : 0;
+  const completedCount = updatedCheckIns.filter((c) => c.completed).length;
+  const newCompletionRate = Math.round((completedCount / updatedCheckIns.length) * 100);
+
+  try {
+    await repo.update(ctx.uid, targetGoal.id, {
+      checkIns: updatedCheckIns,
+      streak: newStreak,
+      completionRate: newCompletionRate,
+    });
+  } catch (e) {
+    return fail('logGoalCheckIn', `Failed to record check-in: ${(e as Error).message}`);
+  }
+
+  ctx.invalidateQueries([['goal', ctx.uid], ['timeline']]);
+
+  return ok('logGoalCheckIn', `Recorded check-in for "${targetGoal.title}". Active streak: ${newStreak} days! 🔥`, {
+    id: targetGoal.id,
+    title: targetGoal.title,
+    streak: newStreak,
+    completionRate: newCompletionRate,
+  });
+};
+
+// ── 12. deleteEntry ──────────────────────────────────────────
 
 const deleteEntryHandler: Handler = async (args, ctx) => {
   const id = asString(args.id);
   const category = asString(args.category)?.toLowerCase() as MemoryCategory;
   if (!id) return fail('deleteEntry', 'An entry id is required.');
 
-  const valid: MemoryCategory[] = ['movie', 'food', 'travel', 'note', 'wishlist'];
+  const valid: MemoryCategory[] = ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'];
   if (!valid.includes(category)) {
     return fail('deleteEntry', `Unknown category "${category}".`);
   }
 
   try {
-    if (category === 'movie') await deleteMovie(ctx.uid, id);
-    else if (category === 'food') await deleteFood(ctx.uid, id);
-    else if (category === 'travel') await deleteTravel(ctx.uid, id);
-    else if (category === 'note') await deleteNote(ctx.uid, id);
-    else await deleteWishlistItem(ctx.uid, id);
+    if (category === 'movie') await getRepository<MovieEntry>('movie').delete(ctx.uid, id);
+    else if (category === 'food') await getRepository<FoodEntry>('food').delete(ctx.uid, id);
+    else if (category === 'travel') await getRepository<TravelEntry>('travel').delete(ctx.uid, id);
+    else if (category === 'note') await getRepository<NoteEntry>('note').delete(ctx.uid, id);
+    else if (category === 'wishlist') await getRepository<WishlistEntry>('wishlist').delete(ctx.uid, id);
+    else await getRepository<GoalEntry>('goal').delete(ctx.uid, id);
   } catch (e) {
     return fail('deleteEntry', `Failed to delete: ${(e as Error).message}`);
   }
@@ -433,14 +596,14 @@ const deleteEntryHandler: Handler = async (args, ctx) => {
   return ok('deleteEntry', `Deleted the ${category} entry.`, { id, category });
 };
 
-// ── 10. searchMemory ────────────────────────────────────────
+// ── 13. searchMemory ────────────────────────────────────────
 
 const searchMemoryHandler: Handler = async (args, ctx) => {
   const query = asString(args.query)?.trim().toLowerCase();
   const requestedCats = asStringArray(args.categories);
-  const cats: MemoryCategory[] = (requestedCats ?? ['movie', 'food', 'travel', 'note', 'wishlist'])
+  const cats: MemoryCategory[] = (requestedCats ?? ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'])
     .filter((c): c is MemoryCategory =>
-      ['movie', 'food', 'travel', 'note', 'wishlist'].includes(c.toLowerCase()),
+      ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'].includes(c.toLowerCase()),
     );
 
   let retrieval;
@@ -509,8 +672,8 @@ function tokenize(text: string): string[] {
 
 // ── Memory scoring for searchMemory ─────────────────────────
 
-type MemoryKind = 'movie' | 'food' | 'travel' | 'note' | 'wishlist';
-type AnyEntry = MovieEntry | FoodEntry | TravelEntry | NoteEntry | WishlistEntry;
+type MemoryKind = 'movie' | 'food' | 'travel' | 'note' | 'wishlist' | 'goal';
+type AnyEntry = MovieEntry | FoodEntry | TravelEntry | NoteEntry | WishlistEntry | GoalEntry;
 
 function memorySearchText(kind: MemoryKind, item: AnyEntry): string {
   const i = item as unknown as Record<string, unknown>;
@@ -523,7 +686,8 @@ function memorySearchText(kind: MemoryKind, item: AnyEntry): string {
       break;
     case 'food':
       parts.push(String(i.restaurant ?? ''), String(i.cuisine ?? ''), String(i.notes ?? ''),
-        (i.favoriteDishes as string[] | undefined)?.join(' ') ?? '');
+        (i.favoriteDishes as string[] | undefined)?.join(' ') ?? '',
+        (i.companions as string[] | undefined)?.join(' ') ?? '');
       break;
     case 'travel':
       parts.push(String(i.destination ?? ''), String(i.notes ?? ''),
@@ -536,12 +700,15 @@ function memorySearchText(kind: MemoryKind, item: AnyEntry): string {
     case 'wishlist':
       parts.push(String(i.title ?? ''), String(i.note ?? ''));
       break;
+    case 'goal':
+      parts.push(String(i.title ?? ''), String(i.description ?? ''));
+      break;
   }
   return parts.join(' ').toLowerCase();
 }
 
 function scoreMemories(
-  bundle: { movies: MovieEntry[]; food: FoodEntry[]; travel: TravelEntry[]; notes: NoteEntry[]; wishlist: WishlistEntry[] },
+  bundle: { movies: MovieEntry[]; food: FoodEntry[]; travel: TravelEntry[]; notes: NoteEntry[]; wishlist: WishlistEntry[]; goals?: GoalEntry[] },
   tokens: string[],
 ): { kind: MemoryKind; item: AnyEntry; score: number }[] {
   if (tokens.length === 0) return [];
@@ -559,6 +726,7 @@ function scoreMemories(
   scan('travel', bundle.travel);
   scan('note', bundle.notes);
   scan('wishlist', bundle.wishlist);
+  if (bundle.goals) scan('goal', bundle.goals);
   out.sort((a, b) => b.score - a.score);
   return out;
 }
@@ -570,13 +738,15 @@ function summarizeMemory(kind: MemoryKind, item: AnyEntry): Record<string, unkno
     case 'movie':
       return { ...base, title: i.title, year: i.year, genres: i.genres, rating: i.rating };
     case 'food':
-      return { ...base, restaurant: i.restaurant, cuisine: i.cuisine, rating: i.rating };
+      return { ...base, restaurant: i.restaurant, cuisine: i.cuisine, rating: i.rating, companions: i.companions };
     case 'travel':
-      return { ...base, destination: i.destination, durationDays: i.durationDays, rating: i.rating };
+      return { ...base, destination: i.destination, durationDays: i.durationDays, rating: i.rating, status: i.status };
     case 'note':
       return { ...base, title: i.title, type: i.type, preview: String(i.text ?? '').slice(0, 120) };
     case 'wishlist':
       return { ...base, title: i.title, category: i.category, done: i.done };
+    case 'goal':
+      return { ...base, title: i.title, streak: i.streak, completionRate: i.completionRate };
   }
 }
 
@@ -591,6 +761,9 @@ export const TOOL_HANDLERS: Record<string, Handler> = {
   updateWishlist: updateWishlistHandler,
   markWishlistDone: markWishlistDoneHandler,
   updateRating: updateRatingHandler,
+  updateEntry: updateEntryHandler,
+  createGoal: createGoalHandler,
+  logGoalCheckIn: logGoalCheckInHandler,
   deleteEntry: deleteEntryHandler,
   searchMemory: searchMemoryHandler,
 };

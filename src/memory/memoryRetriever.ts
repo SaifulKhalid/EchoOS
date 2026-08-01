@@ -4,13 +4,16 @@
  * STEP 2 of the Memory Intelligence Layer.
  * Fetches only the memory categories relevant to the detected intent,
  * never the entire database. Supports optional time-range and limit
- * parameters for efficient queries.
+ * parameters for efficient retrieval.
+ *
+ * Reads through the MemoryRepository abstraction (ADR-0001) — never
+ * touches Firestore directly — so the same code path serves Firestore
+ * today and the Google Drive + IndexedDB mirror in a later phase.
  */
 
-import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { getRepository } from '@/services/memory';
 import type { MemoryCategory } from '@/config/constants';
-import type { MovieEntry, FoodEntry, TravelEntry, NoteEntry, WishlistEntry } from '@/types';
+import type { MovieEntry, FoodEntry, TravelEntry, NoteEntry, WishlistEntry, GoalEntry } from '@/types';
 
 export interface MemoryBundle {
   movies: MovieEntry[];
@@ -18,6 +21,7 @@ export interface MemoryBundle {
   travel: TravelEntry[];
   notes: NoteEntry[];
   wishlist: WishlistEntry[];
+  goals: GoalEntry[];
 }
 
 export interface RetrievalResult {
@@ -37,56 +41,14 @@ export interface RetrievalOptions {
   until?: number;
 }
 
-const CATEGORY_COLLECTION: Record<MemoryCategory, string> = {
+// ── Category → bundle key mapping ───────────────────────────
+const CATEGORY_BUNDLE_KEY: Record<MemoryCategory, keyof MemoryBundle> = {
   movie: 'movies',
   food: 'food',
   travel: 'travel',
   note: 'notes',
   wishlist: 'wishlist',
-};
-
-// ── Fetch helpers ──────────────────────────────────────────
-
-/**
- * Fetch entries for a single category with configurable limits.
- */
-async function fetchCategory<T>(
-  uid: string,
-  category: MemoryCategory,
-  options: RetrievalOptions,
-): Promise<T[]> {
-  const collectionName = CATEGORY_COLLECTION[category];
-  if (!collectionName) return [];
-
-  const limitCount = options.limitPerCategory ?? 50;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firestore QueryConstraint[] type
-  const qConstraints: any[] = [orderBy('createdAt', 'desc')];
-
-  // Apply time range if provided
-  if (options.since) {
-    qConstraints.push(where('createdAt', '>=', options.since));
-  }
-  if (options.until) {
-    qConstraints.push(where('createdAt', '<=', options.until));
-  }
-
-  qConstraints.push(limit(limitCount));
-
-  const q = query(collection(db, 'users', uid, collectionName), ...qConstraints);
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as T[];
-}
-
-// ── Category fetcher mapping ───────────────────────────────
-
-type FetchFn<T> = (uid: string, opts: RetrievalOptions) => Promise<T[]>;
-
-const CATEGORY_FETCHERS: Record<MemoryCategory, FetchFn<MovieEntry | FoodEntry | TravelEntry | NoteEntry | WishlistEntry>> = {
-  movie: (uid, opts) => fetchCategory<MovieEntry>(uid, 'movie', opts),
-  food: (uid, opts) => fetchCategory<FoodEntry>(uid, 'food', opts),
-  travel: (uid, opts) => fetchCategory<TravelEntry>(uid, 'travel', opts),
-  note: (uid, opts) => fetchCategory<NoteEntry>(uid, 'note', opts),
-  wishlist: (uid, opts) => fetchCategory<WishlistEntry>(uid, 'wishlist', opts),
+  goal: 'goals',
 };
 
 // ── Main retriever ─────────────────────────────────────────
@@ -115,42 +77,45 @@ export async function retrieveMemories(
 
   if (categories.length === 0) {
     return {
-      memories: { movies: [], food: [], travel: [], notes: [], wishlist: [] },
+      memories: { movies: [], food: [], travel: [], notes: [], wishlist: [], goals: [] },
       totalCount: 0,
-      categoryCounts: { movie: 0, food: 0, travel: 0, note: 0, wishlist: 0 },
+      categoryCounts: { movie: 0, food: 0, travel: 0, note: 0, wishlist: 0, goal: 0 },
     };
   }
 
-  // Fetch all requested categories in parallel
-  const fetchPromises = categories.map(async (cat) => {
-    const items = await CATEGORY_FETCHERS[cat](uid, { categories, limitPerCategory, since, until });
-    return { category: cat, items };
-  });
+  // Fetch all requested categories in parallel through the repository.
+  const results = await Promise.all(
+    categories.map(async (cat) => ({
+      category: cat,
+      items: await getRepository(cat).retrieve(uid, {
+        since,
+        until,
+        limitPerCategory,
+      }),
+    })),
+  );
 
-  const results = await Promise.all(fetchPromises);
-
-  // Build the bundle
+  // Build the bundle. Fresh arrays every call — never reuse module-level
+  // arrays, or aliasing across concurrent retrievals would corrupt results.
   const memories: MemoryBundle = {
     movies: [],
     food: [],
     travel: [],
     notes: [],
     wishlist: [],
+    goals: [],
   };
-
   const categoryCounts: Record<MemoryCategory, number> = {
     movie: 0,
     food: 0,
     travel: 0,
     note: 0,
     wishlist: 0,
+    goal: 0,
   };
 
   for (const { category, items } of results) {
-    const collectionKey = category === 'note' ? 'notes' : `${category}s`;
-    if (collectionKey in memories) {
-      (memories as unknown as Record<string, unknown[]>)[collectionKey] = items;
-    }
+    (memories as unknown as Record<string, unknown[]>)[CATEGORY_BUNDLE_KEY[category]] = items;
     categoryCounts[category] = items.length;
   }
 
@@ -170,6 +135,6 @@ export async function retrieveMemories(
  * @deprecated Use retrieveMemories with specific categories instead.
  */
 export async function fetchAllMemories(uid: string): Promise<RetrievalResult> {
-  const allCategories: MemoryCategory[] = ['movie', 'food', 'travel', 'note', 'wishlist'];
+  const allCategories: MemoryCategory[] = ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'];
   return retrieveMemories(uid, { categories: allCategories, limitPerCategory: 100 });
 }

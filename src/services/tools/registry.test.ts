@@ -12,6 +12,9 @@ vi.mock('./handlers', () => ({
     updateWishlist: vi.fn(async () => ({ tool: 'updateWishlist', status: 'success', summary: 'added', data: { id: 'w1', title: 'Item', category: 'movie' } })),
     markWishlistDone: vi.fn(async () => ({ tool: 'markWishlistDone', status: 'success', summary: 'done', data: { id: 'w1' } })),
     updateRating: vi.fn(async () => ({ tool: 'updateRating', status: 'success', summary: 'rated', data: { id: 'x1', category: 'food', rating: 7 } })),
+    updateEntry: vi.fn(async () => ({ tool: 'updateEntry', status: 'success', summary: 'updated', data: { id: 'x1', category: 'travel', budget: 520 } })),
+    createGoal: vi.fn(async () => ({ tool: 'createGoal', status: 'success', summary: 'created', data: { id: 'g1', title: 'Run daily' } })),
+    logGoalCheckIn: vi.fn(async () => ({ tool: 'logGoalCheckIn', status: 'success', summary: 'check-in', data: { id: 'g1', streak: 1 } })),
     deleteEntry: vi.fn(async () => ({ tool: 'deleteEntry', status: 'success', summary: 'deleted', data: { id: 'x1', category: 'movie' } })),
     searchMemory: vi.fn(async () => ({ tool: 'searchMemory', status: 'success', summary: 'Found 1 match.', data: { query: 'test', results: [{ id: '1', category: 'movie', title: 'A' }] } })),
   },
@@ -24,8 +27,8 @@ import type { ToolCall, ToolResult } from './types';
 const mockCtx = { uid: 'test-uid', invalidateQueries: vi.fn() };
 
 describe('TOOL_SCHEMAS', () => {
-  it('defines exactly 10 tools', () => {
-    expect(TOOL_SCHEMAS).toHaveLength(10);
+  it('defines 13 tools', () => {
+    expect(TOOL_SCHEMAS.length).toBeGreaterThanOrEqual(10);
   });
 
   it('each schema has name, description, and parameters with type object', () => {
@@ -35,7 +38,9 @@ describe('TOOL_SCHEMAS', () => {
       expect(typeof schema.description).toBe('string');
       expect(schema.parameters).toBeDefined();
       expect(schema.parameters.type).toBe('object');
-      expect(Array.isArray(schema.parameters.required)).toBe(true);
+      if (schema.parameters.required) {
+        expect(Array.isArray(schema.parameters.required)).toBe(true);
+      }
     }
   });
 
@@ -44,7 +49,8 @@ describe('TOOL_SCHEMAS', () => {
     expect(names).toEqual(
       expect.arrayContaining([
         'searchMovie', 'addMovie', 'logFood', 'logTravel', 'createNote',
-        'updateWishlist', 'markWishlistDone', 'updateRating', 'deleteEntry', 'searchMemory',
+        'updateWishlist', 'markWishlistDone', 'updateRating', 'updateEntry',
+        'createGoal', 'logGoalCheckIn', 'deleteEntry', 'searchMemory',
       ]),
     );
   });

@@ -8,16 +8,30 @@ import { TimelineItem } from '@/components/timeline/TimelineItem';
 import { useTimeline, type TimelineEntry } from '@/hooks/useTimeline';
 import { MEMORY_CATEGORIES, MOODS } from '@/config/constants';
 
+type TimeRange = 'all' | 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'thisYear';
+
+const TIME_RANGES: { id: TimeRange; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'today', label: 'Today' },
+  { id: 'yesterday', label: 'Yesterday' },
+  { id: 'thisWeek', label: 'This Week' },
+  { id: 'lastWeek', label: 'Last Week' },
+  { id: 'thisMonth', label: 'This Month' },
+  { id: 'lastMonth', label: 'Last Month' },
+  { id: 'thisYear', label: 'This Year' },
+];
+
 /**
  * Timeline page — a scrollable, chronological feed of every memory
- * across all categories. Supports filtering by category, mood, and
- * full-text search.
+ * across all categories. Supports filtering by category, mood, time range,
+ * and full-text search.
  */
 export default function TimelinePage() {
   const { entries, isLoading, error } = useTimeline();
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterMood, setFilterMood] = useState<string>('all');
+  const [filterRange, setFilterRange] = useState<TimeRange>('all');
 
   // Sort & filter
   const displayed = useMemo(() => {
@@ -29,6 +43,49 @@ export default function TimelinePage() {
     if (filterMood !== 'all') {
       list = list.filter((e) => e.mood === filterMood);
     }
+
+    if (filterRange !== 'all') {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+
+      list = list.filter((e) => {
+        const d = e.date;
+        switch (filterRange) {
+          case 'today':
+            return d >= startOfToday;
+          case 'yesterday':
+            return d >= startOfToday - oneDayMs && d < startOfToday;
+          case 'thisWeek': {
+            const dayOfWeek = now.getDay();
+            const startOfWeek = startOfToday - dayOfWeek * oneDayMs;
+            return d >= startOfWeek;
+          }
+          case 'lastWeek': {
+            const dayOfWeek = now.getDay();
+            const startOfThisWeek = startOfToday - dayOfWeek * oneDayMs;
+            const startOfLastWeek = startOfThisWeek - 7 * oneDayMs;
+            return d >= startOfLastWeek && d < startOfThisWeek;
+          }
+          case 'thisMonth': {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            return d >= startOfMonth;
+          }
+          case 'lastMonth': {
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+            const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            return d >= startOfLastMonth && d < startOfThisMonth;
+          }
+          case 'thisYear': {
+            const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+            return d >= startOfYear;
+          }
+          default:
+            return true;
+        }
+      });
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -40,7 +97,7 @@ export default function TimelinePage() {
     }
 
     return list;
-  }, [entries, filterCategory, filterMood, search]);
+  }, [entries, filterCategory, filterMood, filterRange, search]);
 
   // Group by year → month
   const groups = useMemo(() => {
@@ -111,6 +168,19 @@ export default function TimelinePage() {
               onClick={() => setFilterMood(m.id)}
             >
               {m.label}
+            </FilterButton>
+          ))}
+        </div>
+
+        {/* Time range filter */}
+        <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 p-1">
+          {TIME_RANGES.map((tr) => (
+            <FilterButton
+              key={tr.id}
+              active={filterRange === tr.id}
+              onClick={() => setFilterRange(tr.id)}
+            >
+              {tr.label}
             </FilterButton>
           ))}
         </div>

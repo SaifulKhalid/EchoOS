@@ -89,7 +89,38 @@ export interface PatternAnalysis {
     weekendHabits: string[];
     genreTimeShift: string[];
     travelMoviePattern: string;
+    diningAfterCinema: string;
+    spendingVsHappiness: string;
     moodToCategory: { mood: string; topCategory: string; count: number }[];
+  };
+
+  /** Companion statistics across food and travel. */
+  companions: {
+    topCompanions: NamedCount[];
+    companionCounts: Record<string, { food: number; travel: number; total: number }>;
+  };
+
+  /** Planned trips tracking. */
+  plannedTrips: {
+    count: number;
+    destinations: string[];
+  };
+
+  /** Goal system metrics. */
+  goals: {
+    activeCount: number;
+    longestStreak: { title: string; streak: number } | null;
+    avgCompletionRate: number;
+  };
+
+  /** Session delta & proactive insight. */
+  sessionDelta: {
+    moviesAdded: number;
+    foodsAdded: number;
+    tripsAdded: number;
+    wishlistAdded: number;
+    goalsAdded: number;
+    todayInsight: string;
   };
 
   /** Statistical distributions. */
@@ -141,6 +172,8 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
   const now = Date.now();
   const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
 
+  const goalsList = memories.goals ?? [];
+
   // ── Combine all entries for global analysis ──────────────
   const allEntries = [
     ...movies.map((e) => ({ ...e, _type: 'movie' as MemoryCategory })),
@@ -148,6 +181,7 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
     ...travel.map((e) => ({ ...e, _type: 'travel' as MemoryCategory })),
     ...notes.map((e) => ({ ...e, _type: 'note' as MemoryCategory })),
     ...wishlist.map((e) => ({ ...e, _type: 'wishlist' as MemoryCategory })),
+    ...goalsList.map((e) => ({ ...e, _type: 'goal' as MemoryCategory })),
   ];
 
   // ── Entry counts per category ────────────────────────────
@@ -157,6 +191,7 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
     travel: travel.length,
     note: notes.length,
     wishlist: wishlist.length,
+    goal: goalsList.length,
   };
 
   const totalEntries = allEntries.length;
@@ -623,6 +658,103 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
     }
   }
 
+  // ── Dining-Cinema & Spending-Happiness Cross Correlations ──
+  let diningAfterCinema = 'No distinct food-cinema correlation yet.';
+  let foodPostMovieCount = 0;
+  for (const m of movies) {
+    const mTime = getTimestamp(m.watchDate ?? m.createdAt);
+    if (mTime > 0) {
+      const matchFood = food.find((f) => {
+        const fTime = getTimestamp(f.date ?? f.createdAt);
+        return Math.abs(fTime - mTime) <= 24 * 60 * 60 * 1000;
+      });
+      if (matchFood) foodPostMovieCount++;
+    }
+  }
+  if (foodPostMovieCount > 0) {
+    diningAfterCinema = `You often explore dining experiences shortly after watching movies (${foodPostMovieCount} times logged).`;
+  }
+
+  let spendingVsHappiness = 'Balanced spending habits across dining and travel.';
+  if (ratedFood.length > 0) {
+    const highSpendHighRating = ratedFood.filter((f) => (f.price ?? 0) > 30 && (f.rating ?? 0) >= 8).length;
+    if (highSpendHighRating > 0) {
+      spendingVsHappiness = `Higher spending on food correlates with high satisfaction (${highSpendHighRating} highly rated premium meals).`;
+    }
+  }
+
+  // ── Companion analysis across food and travel ────────────
+  const companionMap = new Map<string, { food: number; travel: number; total: number }>();
+  for (const f of food) {
+    for (const c of f.companions ?? []) {
+      const existing = companionMap.get(c) ?? { food: 0, travel: 0, total: 0 };
+      existing.food++;
+      existing.total++;
+      companionMap.set(c, existing);
+    }
+  }
+  for (const t of travel) {
+    for (const c of t.companions ?? []) {
+      const existing = companionMap.get(c) ?? { food: 0, travel: 0, total: 0 };
+      existing.travel++;
+      existing.total++;
+      companionMap.set(c, existing);
+    }
+  }
+  const topCompanions: NamedCount[] = [...companionMap.entries()]
+    .map(([name, stat]) => ({ name, count: stat.total }))
+    .sort((a, b) => b.count - a.count);
+  const companionCounts = Object.fromEntries(companionMap.entries());
+
+  // ── Planned trips tracking ───────────────────────────────
+  const plannedTripEntries = travel.filter((t) => t.status === 'planned' || getTimestamp(t.startDate) > now);
+  const plannedTrips = {
+    count: plannedTripEntries.length,
+    destinations: plannedTripEntries.map((t) => t.destination),
+  };
+
+  // ── Goal system metrics ──────────────────────────────────
+  const activeGoals = goalsList.filter((g) => g.status === 'active');
+  let longestStreak: { title: string; streak: number } | null = null;
+  for (const g of goalsList) {
+    if (!longestStreak || (g.streak ?? 0) > (longestStreak?.streak ?? 0)) {
+      longestStreak = { title: g.title, streak: g.streak ?? 0 };
+    }
+  }
+  const avgCompletionRate =
+    goalsList.length > 0
+      ? Math.round(goalsList.reduce((acc, g) => acc + (g.completionRate ?? 0), 0) / goalsList.length)
+      : 0;
+  const goalMetrics = {
+    activeCount: activeGoals.length,
+    longestStreak: longestStreak && longestStreak.streak > 0 ? longestStreak : null,
+    avgCompletionRate,
+  };
+
+  // ── Session delta calculation ────────────────────────────
+  const defaultPrevVisit = now - 7 * 86400000;
+  const moviesAdded = movies.filter((m) => getTimestamp(m.createdAt) >= defaultPrevVisit).length;
+  const foodsAdded = food.filter((f) => getTimestamp(f.createdAt) >= defaultPrevVisit).length;
+  const tripsAdded = travel.filter((t) => getTimestamp(t.createdAt) >= defaultPrevVisit).length;
+  const wishlistAdded = wishlist.filter((w) => getTimestamp(w.createdAt) >= defaultPrevVisit).length;
+  const goalsAdded = goalsList.filter((g) => getTimestamp(g.createdAt) >= defaultPrevVisit).length;
+
+  let todayInsight = 'You have a balanced logging history across entertainment, dining, and personal goals.';
+  if (topGenres.length > 0) {
+    todayInsight = `You've been exploring ${topGenres[0].name.toLowerCase()} more than your usual genres recently.`;
+  } else if (topCuisines.length > 0) {
+    todayInsight = `Your culinary memories lean heavily toward ${topCuisines[0].name} cuisine.`;
+  }
+
+  const sessionDelta = {
+    moviesAdded,
+    foodsAdded,
+    tripsAdded,
+    wishlistAdded,
+    goalsAdded,
+    todayInsight,
+  };
+
   // ── Recent activity ──────────────────────────────────────
   const last7Days = allEntries.filter((e) => getTimestamp(e.createdAt) > now - 7 * 86400000).length;
   const last30Days = allEntries.filter((e) => getTimestamp(e.createdAt) > now - 30 * 86400000).length;
@@ -675,8 +807,17 @@ export function analyzePatterns(memories: MemoryBundle): PatternAnalysis {
       weekendHabits,
       genreTimeShift,
       travelMoviePattern,
+      diningAfterCinema,
+      spendingVsHappiness,
       moodToCategory,
     },
+    companions: {
+      topCompanions,
+      companionCounts,
+    },
+    plannedTrips,
+    goals: goalMetrics,
+    sessionDelta,
     distributions: {
       ratingDistribution,
       moodDistribution,

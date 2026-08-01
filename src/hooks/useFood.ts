@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
-import * as foodService from '@/services/firestore/food';
+import { getRepository } from '@/services/memory';
 import type { FoodEntry } from '@/types';
+
+const foodRepo = getRepository<FoodEntry>('food');
 
 /** Query all food entries for the current user. */
 export function useFood() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['food', user?.uid],
-    queryFn: () => foodService.fetchFood(user!.uid),
+    queryFn: () => foodRepo.fetchAll(user!.uid),
     enabled: !!user?.uid,
   });
 }
@@ -19,7 +21,7 @@ export function useAddFood() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Omit<FoodEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
-      foodService.addFood(user!.uid, data),
+      foodRepo.add(user!.uid, data),
     onMutate: async (newData) => {
       await queryClient.cancelQueries({ queryKey: ['food', user?.uid] });
       const previous = queryClient.getQueryData(['food', user?.uid]);
@@ -51,7 +53,7 @@ export function useUpdateFood() {
     }: {
       id: string;
       data: Partial<Omit<FoodEntry, 'id' | 'createdAt' | 'updatedAt'>>;
-    }) => foodService.updateFood(user!.uid, id, data),
+    }) => foodRepo.update(user!.uid, id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['food', user?.uid] });
       const previous = queryClient.getQueryData(['food', user?.uid]);
@@ -76,7 +78,7 @@ export function useDeleteFood() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => foodService.deleteFood(user!.uid, id),
+    mutationFn: (id: string) => foodRepo.delete(user!.uid, id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['food', user?.uid] });
       const previous = queryClient.getQueryData(['food', user?.uid]);

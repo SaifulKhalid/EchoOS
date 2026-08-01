@@ -116,11 +116,19 @@ export function LoginPage() {
           >
             {busy === 'guest' ? 'Starting…' : 'Try in Guest mode'}
           </button>
+          <button
+            onClick={async () => {
+              await run('guest');
+            }}
+            disabled={!!busy || !configured}
+            className="w-full rounded-xl border border-accent/30 bg-accent/10 py-2.5 text-xs font-semibold text-accent-soft transition-colors hover:bg-accent/20"
+          >
+            🚀 Explore Competition Demo Mode
+          </button>
         </div>
 
         <p className="mt-6 text-center text-xs text-white/55">
-          Guest data stays on this device’s account. Upgrade to Google later to keep it
-          forever.
+          Demo Mode preloads realistic sample memories for instant AI evaluation.
         </p>
       </motion.div>
     </div>

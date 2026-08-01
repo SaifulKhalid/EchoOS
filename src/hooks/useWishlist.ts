@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
-import * as wishlistService from '@/services/firestore/wishlist';
+import { getRepository } from '@/services/memory';
 import type { WishlistEntry } from '@/types';
+
+const wishlistRepo = getRepository<WishlistEntry>('wishlist');
 
 /** Query all wishlist items for the current user. */
 export function useWishlist() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['wishlist', user?.uid],
-    queryFn: () => wishlistService.fetchWishlist(user!.uid),
+    queryFn: () => wishlistRepo.fetchAll(user!.uid),
     enabled: !!user?.uid,
   });
 }
@@ -19,7 +21,7 @@ export function useAddWishlistItem() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Omit<WishlistEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
-      wishlistService.addWishlistItem(user!.uid, data),
+      wishlistRepo.add(user!.uid, data),
     onMutate: async (newData) => {
       await queryClient.cancelQueries({ queryKey: ['wishlist', user?.uid] });
       const previous = queryClient.getQueryData(['wishlist', user?.uid]);
@@ -51,7 +53,7 @@ export function useUpdateWishlistItem() {
     }: {
       id: string;
       data: Partial<Omit<WishlistEntry, 'id' | 'createdAt' | 'updatedAt'>>;
-    }) => wishlistService.updateWishlistItem(user!.uid, id, data),
+    }) => wishlistRepo.update(user!.uid, id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['wishlist', user?.uid] });
       const previous = queryClient.getQueryData(['wishlist', user?.uid]);
@@ -76,7 +78,7 @@ export function useDeleteWishlistItem() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => wishlistService.deleteWishlistItem(user!.uid, id),
+    mutationFn: (id: string) => wishlistRepo.delete(user!.uid, id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['wishlist', user?.uid] });
       const previous = queryClient.getQueryData(['wishlist', user?.uid]);

@@ -54,15 +54,16 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'logFood',
     description:
-      'Log a restaurant or meal. Required: restaurant. Optional: cuisine, price, rating (0-10), dishes (array), mood, notes, date.',
+      'Log a restaurant or meal. Required: restaurant. Optional: cuisine, price, rating (0-10), dishes (array), companions (array), mood, notes, date.',
     parameters: {
       type: 'object',
       properties: {
         restaurant: { type: 'string' },
-        cuisine: { type: 'string', description: 'e.g. Italian, Thai' },
+        cuisine: { type: 'string', description: 'e.g. Italian, Thai, Japanese' },
         price: { type: 'number', description: 'Price paid (any currency).' },
         rating: { type: 'number', description: '0-10' },
         dishes: { type: 'array', items: { type: 'string' }, description: 'Favorite dishes.' },
+        companions: { type: 'array', items: { type: 'string' }, description: 'People who dined with you.' },
         mood: { type: 'string' },
         notes: { type: 'string' },
         date: { type: 'string', description: 'ISO or YYYY-MM-DD.' },
@@ -73,7 +74,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'logTravel',
     description:
-      'Log a trip. Required: destination. Optional: startDate, endDate (ISO/YYYY-MM-DD), budget, durationDays (auto-derived from dates if omitted), places (array), companions (array), favoriteMoments (array), rating, mood, notes.',
+      'Log a trip. Required: destination. Optional: startDate, endDate (ISO/YYYY-MM-DD), budget, durationDays (auto-derived from dates if omitted), places (array), companions (array), favoriteMoments (array), rating, mood, notes, status (planned|completed|cancelled).',
     parameters: {
       type: 'object',
       properties: {
@@ -88,6 +89,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         rating: { type: 'number' },
         mood: { type: 'string' },
         notes: { type: 'string' },
+        status: { type: 'string', enum: ['planned', 'completed', 'cancelled'], description: 'Default completed. Use planned for upcoming trips.' },
       },
       required: ['destination'],
     },
@@ -146,6 +148,50 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'updateEntry',
+    description:
+      'Update specific fields of an existing memory (natural language edit). Required: category, fields object. Optional: id (if omitted or "latest", updates the most recent entry in that category). Use for price corrections, budget edits, rating updates, companion additions, or note edits.',
+    parameters: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', enum: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'] },
+        id: { type: 'string', description: 'Entry ID or "latest". Omit to target the most recent entry.' },
+        fields: { type: 'object', description: 'Partial fields to update (e.g. { budget: 520 }, { rating: 9.5 }, { review: "text" }).' },
+      },
+      required: ['category', 'fields'],
+    },
+  },
+  {
+    name: 'createGoal',
+    description:
+      'Create a personal habit or goal (e.g., "Run every morning"). Required: title. Optional: description, frequency (daily|weekly|monthly, default daily), targetCount, category.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        description: { type: 'string' },
+        frequency: { type: 'string', enum: ['daily', 'weekly', 'monthly'] },
+        targetCount: { type: 'number' },
+        category: { type: 'string', enum: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'] },
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'logGoalCheckIn',
+    description:
+      'Log a completed check-in for an active goal to build a streak. Required: title or id. Optional: notes, completed (default true).',
+    parameters: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Goal ID (or leave empty if title is supplied).' },
+        title: { type: 'string', description: 'Goal title to match if ID is omitted.' },
+        notes: { type: 'string' },
+        completed: { type: 'boolean', description: 'Default true.' },
+      },
+    },
+  },
+  {
     name: 'deleteEntry',
     description:
       'Permanently delete a memory entry. Required: id, category. Use cautiously — confirm intent first when ambiguous.',
@@ -153,7 +199,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       type: 'object',
       properties: {
         id: { type: 'string' },
-        category: { type: 'string', enum: ['movie', 'food', 'travel', 'note', 'wishlist'] },
+        category: { type: 'string', enum: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'] },
       },
       required: ['id', 'category'],
     },
@@ -161,14 +207,14 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'searchMemory',
     description:
-      'Search the user\'s OWN stored memories (movies, food, travel, notes, wishlist) by keywords. Use this to answer questions about their past instead of guessing. Optional: categories filter.',
+      'Search the user\'s OWN stored memories (movies, food, travel, notes, wishlist, goals) by keywords. Use this to answer questions about their past instead of guessing. Optional: categories filter.',
     parameters: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Keywords to search for across all memories.' },
         categories: {
           type: 'array',
-          items: { type: 'string', enum: ['movie', 'food', 'travel', 'note', 'wishlist'] },
+          items: { type: 'string', enum: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'] },
           description: 'Restrict to these categories. Defaults to all.',
         },
       },
@@ -225,6 +271,9 @@ const TOOL_CATEGORY: Record<string, ActionDescriptor['category']> = {
   updateWishlist: 'wishlist',
   markWishlistDone: 'wishlist',
   updateRating: 'movie', // refined below by data.category
+  updateEntry: 'memory', // refined below by data.category
+  createGoal: 'goal',
+  logGoalCheckIn: 'goal',
   deleteEntry: 'memory',
   searchMemory: 'memory',
 };
@@ -238,6 +287,9 @@ const TOOL_VERB: Record<string, string> = {
   updateWishlist: 'Added',
   markWishlistDone: 'Completed',
   updateRating: 'Rated',
+  updateEntry: 'Updated',
+  createGoal: 'Created Goal',
+  logGoalCheckIn: 'Check-in',
   deleteEntry: 'Deleted',
   searchMemory: 'Searched',
 };
@@ -249,8 +301,8 @@ const TOOL_VERB: Record<string, string> = {
 export function toAction(result: ToolResult): ActionDescriptor {
   const d = result.data ?? {};
   const category: ActionDescriptor['category'] =
-    result.tool === 'updateRating'
-      ? ((d.category as MemoryCategory) ?? 'movie')
+    result.tool === 'updateRating' || result.tool === 'updateEntry'
+      ? ((d.category as MemoryCategory) ?? 'memory')
       : TOOL_CATEGORY[result.tool] ?? 'memory';
 
   const verb = TOOL_VERB[result.tool] ?? 'Processed';

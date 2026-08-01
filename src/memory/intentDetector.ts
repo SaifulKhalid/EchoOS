@@ -77,7 +77,7 @@ const INTENT_PATTERNS: Record<IntentType, IntentPattern> = {
       /\b(when did i|what happened|what did i do) .+ (last|past|this)\b/i,
       /\b(timeline of|show me my)\b/i,
     ],
-    categories: ['movie', 'food', 'travel', 'note', 'wishlist'],
+    categories: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'],
     weight: 6,
   },
   memory_lookup: {
@@ -86,7 +86,7 @@ const INTENT_PATTERNS: Record<IntentType, IntentPattern> = {
       /\b(what did i .+ about|did i watch|did i eat|did i visit|did i go)\b/i,
       /\b(what's the name of|what was the name)\b/i,
     ],
-    categories: ['movie', 'food', 'travel', 'note'],
+    categories: ['movie', 'food', 'travel', 'note', 'goal'],
     weight: 7,
   },
   comparison: {
@@ -95,7 +95,7 @@ const INTENT_PATTERNS: Record<IntentType, IntentPattern> = {
       /\b(how does .+ compare|which is better|what's the difference)\b/i,
       /\b(between|than .+ but|vs )\b/i,
     ],
-    categories: ['movie', 'food', 'travel'],
+    categories: ['movie', 'food', 'travel', 'goal'],
     weight: 6,
   },
   prediction: {
@@ -104,7 +104,7 @@ const INTENT_PATTERNS: Record<IntentType, IntentPattern> = {
       /\b(what are the chances|do you think|how likely)\b/i,
       /\b(would i enjoy|would i like|will i like)\b/i,
     ],
-    categories: ['movie', 'food', 'travel', 'wishlist'],
+    categories: ['movie', 'food', 'travel', 'wishlist', 'goal'],
     weight: 5,
   },
   reflection: {
@@ -113,7 +113,7 @@ const INTENT_PATTERNS: Record<IntentType, IntentPattern> = {
       /\b(what have i learned|what's my|my life|who am i)\b/i,
       /\b(how was my|my year in|this year's)\b/i,
     ],
-    categories: ['movie', 'food', 'travel', 'note', 'wishlist'],
+    categories: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'],
     weight: 6,
   },
   story_generation: {
@@ -121,7 +121,7 @@ const INTENT_PATTERNS: Record<IntentType, IntentPattern> = {
       /\b(tell me a story|narrative|write a story|story about|summarize my)\b/i,
       /\b(my .+ story|story of my|journey|adventure)\b/i,
     ],
-    categories: ['movie', 'food', 'travel', 'note', 'wishlist'],
+    categories: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'],
     weight: 5,
   },
   analytics: {
@@ -130,12 +130,12 @@ const INTENT_PATTERNS: Record<IntentType, IntentPattern> = {
       /\b(how many|how much|how often|frequency|average)\b/i,
       /\b(most |least |top |bottom |chart|graph|insight)\b/i,
     ],
-    categories: ['movie', 'food', 'travel', 'note', 'wishlist'],
+    categories: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'],
     weight: 6,
   },
   general_conversation: {
     keywords: [], // fallback — no specific keywords needed
-    categories: ['movie', 'food', 'travel', 'note'],
+    categories: ['movie', 'food', 'travel', 'note', 'wishlist', 'goal'],
     weight: 1,
   },
 };
@@ -176,6 +176,14 @@ const CATEGORY_KEYWORDS: Record<string, MemoryCategory> = {
   wishlist: 'wishlist',
   want: 'wishlist',
   bucket: 'wishlist',
+  goal: 'goal',
+  goals: 'goal',
+  habit: 'goal',
+  habits: 'goal',
+  streak: 'goal',
+  running: 'goal',
+  exercise: 'goal',
+  fitness: 'goal',
 };
 
 /**

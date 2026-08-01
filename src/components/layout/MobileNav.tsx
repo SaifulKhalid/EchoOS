@@ -12,6 +12,7 @@ import {
   IconTravel,
   IconNote,
   IconWishlist,
+  IconGoal,
   IconSearch,
   IconSettings,
 } from '@/components/ui/icons';
@@ -29,6 +30,7 @@ const MORE_ITEMS = [
   { to: ROUTES.travel, label: 'Travel', Icon: IconTravel },
   { to: ROUTES.notes, label: 'Notes', Icon: IconNote },
   { to: ROUTES.wishlist, label: 'Wishlist', Icon: IconWishlist },
+  { to: ROUTES.goals, label: 'Goals', Icon: IconGoal },
   { to: ROUTES.search, label: 'Search', Icon: IconSearch },
   { to: ROUTES.settings, label: 'Settings', Icon: IconSettings },
 ];

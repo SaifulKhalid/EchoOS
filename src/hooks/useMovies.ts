@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
-import * as movieService from '@/services/firestore/movies';
+import { getRepository } from '@/services/memory';
 import type { MovieEntry } from '@/types';
+
+const movieRepo = getRepository<MovieEntry>('movie');
 
 /** Query all movie entries for the current user. */
 export function useMovies() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['movies', user?.uid],
-    queryFn: () => movieService.fetchMovies(user!.uid),
+    queryFn: () => movieRepo.fetchAll(user!.uid),
     enabled: !!user?.uid,
   });
 }
@@ -19,7 +21,7 @@ export function useAddMovie() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Omit<MovieEntry, 'id' | 'createdAt' | 'updatedAt'>) =>
-      movieService.addMovie(user!.uid, data),
+      movieRepo.add(user!.uid, data),
     onMutate: async (newData) => {
       await queryClient.cancelQueries({ queryKey: ['movies', user?.uid] });
       const previous = queryClient.getQueryData(['movies', user?.uid]);
@@ -51,7 +53,7 @@ export function useUpdateMovie() {
     }: {
       id: string;
       data: Partial<Omit<MovieEntry, 'id' | 'createdAt' | 'updatedAt'>>;
-    }) => movieService.updateMovie(user!.uid, id, data),
+    }) => movieRepo.update(user!.uid, id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['movies', user?.uid] });
       const previous = queryClient.getQueryData(['movies', user?.uid]);
@@ -76,7 +78,7 @@ export function useDeleteMovie() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => movieService.deleteMovie(user!.uid, id),
+    mutationFn: (id: string) => movieRepo.delete(user!.uid, id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['movies', user?.uid] });
       const previous = queryClient.getQueryData(['movies', user?.uid]);

@@ -209,6 +209,37 @@ export function buildStructuredContext(
 
   sections.push(patternLines.join('\n'));
 
+  // ── Section: SESSION DELTA (SINCE LAST VISIT) ─────────────
+  const { sessionDelta, companions: companionStats, plannedTrips, goals: goalStats } = patterns;
+  const deltaLines: string[] = ['## Session Context (Since Last Visit)'];
+  deltaLines.push(`- Movies added: ${sessionDelta.moviesAdded}`);
+  deltaLines.push(`- Food memories added: ${sessionDelta.foodsAdded}`);
+  deltaLines.push(`- Trips added: ${sessionDelta.tripsAdded}`);
+  deltaLines.push(`- Wishlist items added: ${sessionDelta.wishlistAdded}`);
+  deltaLines.push(`- Goals created/updated: ${sessionDelta.goalsAdded}`);
+  deltaLines.push(`- Today's Insight: ${sessionDelta.todayInsight}`);
+  sections.push(deltaLines.join('\n'));
+
+  // ── Section: CROSS-CATEGORY INTELLIGENCE ─────────────────
+  const intelLines: string[] = ['## Cross-Category Intelligence'];
+  if (correlations.diningAfterCinema && !correlations.diningAfterCinema.includes('No distinct')) {
+    intelLines.push(`- Dining & Cinema: ${correlations.diningAfterCinema}`);
+  }
+  if (correlations.spendingVsHappiness) {
+    intelLines.push(`- Value & Happiness: ${correlations.spendingVsHappiness}`);
+  }
+  if (companionStats.topCompanions.length > 0) {
+    const compStr = companionStats.topCompanions.slice(0, 5).map((c) => `${c.name} (${c.count} entries)`).join(', ');
+    intelLines.push(`- Frequent Companions: ${compStr}`);
+  }
+  if (plannedTrips.count > 0) {
+    intelLines.push(`- Upcoming Planned Trips (${plannedTrips.count}): ${plannedTrips.destinations.join(', ')}`);
+  }
+  if (goalStats.activeCount > 0) {
+    intelLines.push(`- Active Goals (${goalStats.activeCount}): Average completion ${goalStats.avgCompletionRate}%${goalStats.longestStreak ? `, Longest streak ${goalStats.longestStreak.streak} days (${goalStats.longestStreak.title})` : ''}`);
+  }
+  sections.push(intelLines.join('\n'));
+
   // ── Section: RELEVANT MEMORIES (based on intent) ─────────
   const memLines: string[] = ['## Relevant Memories'];
 
@@ -243,6 +274,7 @@ export function buildStructuredContext(
         f.restaurant,
         f.cuisine ? `(${f.cuisine})` : '',
         f.rating != null ? `★${f.rating}` : '',
+        f.companions?.length ? `With: ${f.companions.join(', ')}` : '',
         f.favoriteDishes?.length ? `Faves: ${f.favoriteDishes.join(', ')}` : '',
       ].filter(Boolean);
       memLines.push(`  · ${parts.join(' ')}`);
@@ -256,10 +288,12 @@ export function buildStructuredContext(
     memLines.push('Travel:');
     for (const t of memories.travel.slice(0, MAX_ENTRIES)) {
       const parts = [
+        t.status === 'planned' ? '[PLANNED]' : '',
         t.destination,
         t.durationDays ? `${t.durationDays}d` : '',
         t.rating != null ? `★${t.rating}` : '',
         t.budget ? `$${t.budget}` : '',
+        t.companions?.length ? `With: ${t.companions.join(', ')}` : '',
       ].filter(Boolean);
       memLines.push(`  · ${parts.join(' ')}`);
     }
@@ -286,6 +320,16 @@ export function buildStructuredContext(
     }
     if (memories.wishlist.length > MAX_ENTRIES) {
       memLines.push(`  … and ${memories.wishlist.length - MAX_ENTRIES} more`);
+    }
+  }
+
+  if (categories.includes('goal') && memories.goals && memories.goals.length > 0) {
+    memLines.push('Goals & Habits:');
+    for (const g of memories.goals.slice(0, MAX_ENTRIES)) {
+      memLines.push(`  · [${g.status.toUpperCase()}] ${g.title} (${g.frequency}) — Streak: ${g.streak} days, Completion: ${g.completionRate}%`);
+    }
+    if (memories.goals.length > MAX_ENTRIES) {
+      memLines.push(`  … and ${memories.goals.length - MAX_ENTRIES} more`);
     }
   }
 

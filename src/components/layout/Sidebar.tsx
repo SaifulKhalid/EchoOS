@@ -12,6 +12,7 @@ import {
   IconTravel,
   IconNote,
   IconWishlist,
+  IconGoal,
   IconAnalytics,
   IconSettings,
 } from '@/components/ui/icons';
@@ -34,6 +35,7 @@ const LIBRARY: NavItem[] = [
   { to: ROUTES.travel, label: 'Travel', Icon: IconTravel },
   { to: ROUTES.notes, label: 'Notes', Icon: IconNote },
   { to: ROUTES.wishlist, label: 'Wishlist', Icon: IconWishlist },
+  { to: ROUTES.goals, label: 'Goals', Icon: IconGoal },
 ];
 
 const INSIGHTS: NavItem[] = [

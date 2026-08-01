@@ -8,6 +8,7 @@ const CATEGORY_ICON: Record<ActionDescriptor['category'], string> = {
   travel: '✈️',
   note: '💭',
   wishlist: '⭐',
+  goal: '🎯',
   search: '🔍',
   memory: '🧠',
 };

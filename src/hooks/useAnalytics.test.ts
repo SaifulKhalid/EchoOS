@@ -10,6 +10,7 @@ let mockFood: FoodEntry[] = [];
 let mockTravel: TravelEntry[] = [];
 let mockNotes: NoteEntry[] = [];
 let mockWishlist: WishlistEntry[] = [];
+let mockGoals: any[] = [];
 let mockLoading = false;
 
 vi.mock('./useMovies', () => ({
@@ -26,6 +27,9 @@ vi.mock('./useNotes', () => ({
 }));
 vi.mock('./useWishlist', () => ({
   useWishlist: () => ({ data: mockWishlist, isLoading: mockLoading }),
+}));
+vi.mock('./useGoals', () => ({
+  useGoals: () => ({ data: mockGoals, isLoading: mockLoading }),
 }));
 
 // ── Helpers ─────────────────────────────────────────────────

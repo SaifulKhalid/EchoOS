@@ -43,6 +43,14 @@ export const IconTimeline = (p: IconProps) => (
   </svg>
 );
 
+export const IconGoal = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5" />
+    <circle cx="12" cy="12" r="1" />
+  </svg>
+);
+
 export const IconMovie = (p: IconProps) => (
   <svg {...base(p)}>
     <rect x="3" y="4" width="18" height="16" rx="2" />
