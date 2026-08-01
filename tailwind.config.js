@@ -50,10 +50,8 @@ export default {
         glow: '0 0 40px -8px rgba(124, 108, 255, 0.45)',
       },
       backgroundImage: {
-        'accent-gradient':
-          'linear-gradient(135deg, #7c6cff 0%, #9d8bff 45%, #4fd6e6 100%)',
-        'glass-sheen':
-          'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+        'accent-gradient': '#7c6cff',
+        'glass-sheen': 'transparent',
       },
       keyframes: {
         'fade-in': {

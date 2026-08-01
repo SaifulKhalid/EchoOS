@@ -199,7 +199,7 @@ function MovieCard({
       )}
 
       {/* Hover overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-ink-950/95 via-ink-950/40 to-transparent opacity-0 transition-all duration-300 group-hover:opacity-100">
+      <div className="absolute inset-0 bg-ink-950/85 opacity-0 transition-all duration-300 group-hover:opacity-100">
         <div className="absolute bottom-0 left-0 right-0 p-3">
           <p className="truncate text-sm font-medium text-white drop-shadow-md">
             {movie.title}

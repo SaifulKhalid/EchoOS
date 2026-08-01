@@ -42,7 +42,10 @@ export function LoginPage() {
     setBusy(kind);
     try {
       if (kind === 'google') {
-        await signInWithGoogle();
+        const u = await signInWithGoogle();
+        if (u) {
+          navigate(targetPath, { replace: true });
+        }
       } else {
         const u = await signInAsGuest();
         if (u) {
@@ -81,17 +84,6 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6">
-      {/* Floating ambient orbs for depth. */}
-      <motion.div
-        className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-accent/20 blur-3xl"
-        animate={{ y: [0, 30, 0] }}
-        transition={{ repeat: Infinity, duration: 10, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full bg-accent-cyan/15 blur-3xl"
-        animate={{ y: [0, -24, 0] }}
-        transition={{ repeat: Infinity, duration: 12, ease: 'easeInOut' }}
-      />
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}

@@ -1,6 +1,7 @@
 import {
   GoogleAuthProvider,
   signInWithRedirect,
+  signInWithPopup,
   getRedirectResult,
   signInAnonymously,
   signInWithEmailAndPassword,
@@ -56,12 +57,30 @@ export async function handleRedirectResult(): Promise<User | null> {
 }
 
 /**
- * Initiate Google sign-in via redirect.
- * The user leaves the page for Google, then returns.
- * Call `handleRedirectResult()` on mount to process the result.
+ * Initiate Google sign-in.
+ * Tries popup first for instant in-page resolution; falls back to redirect
+ * if popup is blocked by the browser.
  */
-export function signInWithGoogle(): Promise<void> {
-  return signInWithRedirect(auth, googleProvider);
+export async function signInWithGoogle(): Promise<User | null> {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    if (result.user) {
+      await ensureUserProfile(result.user);
+      return result.user;
+    }
+    return null;
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string };
+    if (
+      errorObj?.code === 'auth/popup-blocked' ||
+      errorObj?.code === 'auth/popup-closed-by-user' ||
+      errorObj?.code === 'auth/cancelled-popup-request'
+    ) {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function signInAsGuest(): Promise<User> {
