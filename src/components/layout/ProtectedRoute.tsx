@@ -16,7 +16,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   if (loading) return <LoadingScreen label="Restoring session" />;
 
   if (!user) {
-    return <Navigate to={ROUTES.login} replace state={{ from: location }} />;
+    const fromLocation = location.pathname === ROUTES.login ? undefined : location;
+    return <Navigate to={ROUTES.login} replace state={{ from: fromLocation }} />;
   }
 
   return <>{children}</>;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { signInWithGoogle, signInAsGuest, handleRedirectResult } from '@/firebase/auth';
@@ -16,23 +16,34 @@ const HIGHLIGHTS = [
 export function LoginPage() {
   const { user, loading, configured } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [busy, setBusy] = useState<null | 'google' | 'guest'>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Process the redirect result after Google sign-in redirects back
   useEffect(() => {
-    handleRedirectResult();
+    handleRedirectResult().catch((err) => {
+      console.warn('Redirect sign-in result error:', err);
+    });
   }, []);
 
-  const from = (location.state as { from?: Location })?.from?.pathname ?? ROUTES.dashboard;
-  if (!loading && user) return <Navigate to={from} replace />;
+  const rawFrom = (location.state as { from?: Location })?.from?.pathname;
+  const targetPath = rawFrom && rawFrom !== ROUTES.login ? rawFrom : ROUTES.dashboard;
+
+  if (!loading && user) return <Navigate to={targetPath} replace />;
 
   async function run(kind: 'google' | 'guest') {
     setError(null);
     setBusy(kind);
     try {
-      if (kind === 'google') await signInWithGoogle();
-      else await signInAsGuest();
+      if (kind === 'google') {
+        await signInWithGoogle();
+      } else {
+        const u = await signInAsGuest();
+        if (u) {
+          navigate(targetPath, { replace: true });
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed. Please try again.');
     } finally {
