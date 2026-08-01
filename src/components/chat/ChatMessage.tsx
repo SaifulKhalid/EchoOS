@@ -72,7 +72,7 @@ export function ChatMessage({
               )}
 
               <div className="text-sm leading-relaxed text-white/90 whitespace-pre-wrap">
-                {message.content}
+                {message.content ? message.content.replace(/<!--ECHOOS_META[\s\S]*?(?:-->|$)/g, '').trim() : ''}
                 {isStreaming && <span className="ml-0.5 animate-pulse text-accent">▊</span>}
               </div>
             </GlassCard>

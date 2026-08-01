@@ -215,7 +215,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try {
           const chunk = JSON.parse(payload) as GroqChunk;
           const choice = chunk.choices?.[0];
-          const delta = choice?.delta?.content;
+          const rawDelta = choice?.delta?.content ?? (choice?.delta as unknown as Record<string, unknown>)?.reasoning;
+          const delta = typeof rawDelta === 'string' ? rawDelta : '';
           if (delta) {
             fullContent += delta;
             writeSSE(res, { content: delta });

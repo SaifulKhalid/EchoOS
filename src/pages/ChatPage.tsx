@@ -43,7 +43,12 @@ function buildToolInstructions(): string {
 
 // ── Strip the machine-readable metadata block from displayed/saved text ──
 function stripMetaBlock(text: string): string {
-  return text.replace(/<!--ECHOOS_META\{[\s\S]*?\}-->/, '').trimEnd();
+  if (!text) return '';
+  return text
+    .replace(/<!--ECHOOS_META\{[\s\S]*?\}-->/g, '')
+    .replace(/<!--ECHOOS_META[\s\S]*?(?:-->|$)/g, '')
+    .replace(/---\s*\nReasoning:\s*.+?(\n|$)/s, '')
+    .trim();
 }
 
 const WELCOME_SUGGESTIONS = [
@@ -178,16 +183,17 @@ export default function ChatPage() {
 
         // 4. If no tool calls, the first pass is the final answer
         if (firstPass.toolCalls.length === 0) {
-          const cleanText = stripMetaBlock(firstPass.responseText);
+          const rawCleaned = firstPass.processed.cleanedText || stripMetaBlock(firstPass.responseText);
+          const cleanText = rawCleaned || 'I answered based on your memories and personal data.';
           const assistantMsg: ChatMessageType = {
             id: `ai-${Date.now()}`,
             role: 'assistant',
             content: cleanText,
             createdAt: Date.now(),
-            reasoning: firstMeta.reasoning,
-            confidence: firstPass.pipelineResult.confidence.overall ?? firstMeta.confidence,
-            suggestionChips: firstMeta.suggestionChips ?? [],
-            referencedMemoryIds: firstMeta.referencedMemoryIds,
+            reasoning: firstPass.processed.reasoning || firstMeta.reasoning,
+            confidence: firstPass.processed.confidence ?? firstPass.pipelineResult.confidence.overall ?? firstMeta.confidence,
+            suggestionChips: firstPass.processed.suggestionChips.length > 0 ? firstPass.processed.suggestionChips : (firstMeta.suggestionChips ?? []),
+            referencedMemoryIds: firstPass.processed.memoryReferences.length > 0 ? firstPass.processed.memoryReferences : firstMeta.referencedMemoryIds,
           };
 
           await addMessage(user.uid, {
@@ -273,17 +279,24 @@ export default function ChatPage() {
         );
 
         // 8. Build and save the complete assistant message
-        const cleanFinalText = stripMetaBlock(finalText);
+        const rawCleanText = stripMetaBlock(finalText);
+        const actionSummary = batch.actions.map((a) => `${a.verb} ${a.title}`).join(', ');
+        const cleanFinalText =
+          rawCleanText ||
+          (actionSummary
+            ? `Successfully performed: ${actionSummary}.`
+            : 'Done! I updated your memories as requested.');
+
         const assistantMsg: ChatMessageType = {
           id: `ai-${Date.now()}`,
           role: 'assistant',
           content: cleanFinalText,
           createdAt: Date.now(),
           actions: batch.actions,
-          reasoning: finalMeta.reasoning,
-          confidence: firstPass.pipelineResult.confidence.overall ?? finalMeta.confidence,
-          suggestionChips: finalMeta.suggestionChips ?? [],
-          referencedMemoryIds: finalMeta.referencedMemoryIds,
+          reasoning: finalMeta.reasoning || firstPass.processed.reasoning,
+          confidence: firstPass.processed.confidence ?? firstPass.pipelineResult.confidence.overall ?? finalMeta.confidence,
+          suggestionChips: (finalMeta.suggestionChips && finalMeta.suggestionChips.length > 0) ? finalMeta.suggestionChips : firstPass.processed.suggestionChips,
+          referencedMemoryIds: finalMeta.referencedMemoryIds ?? firstPass.processed.memoryReferences,
         };
 
         await addMessage(user.uid, {

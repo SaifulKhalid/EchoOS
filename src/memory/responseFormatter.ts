@@ -267,11 +267,17 @@ export function processResponse(
   const parsedMeta = parseInlineMetadataBlock(rawText);
 
   // ── Step 2: Clean the text (remove machine blocks) ───────
-  const cleanedText = rawText
+  let cleanedText = rawText
     .replace(/<!--ECHOOS_META\{[\s\S]*?\}-->/g, '')
+    .replace(/<!--ECHOOS_META[\s\S]*?(?:-->|$)/g, '')
     .replace(/---\s*\nReasoning:\s*.+?(\n|$)/s, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+
+  // If text stripping emptied the response (e.g. malformed tag), preserve rawText minus any prefix tag
+  if (!cleanedText && rawText) {
+    cleanedText = rawText.replace(/<!--ECHOOS_META[\s\S]*/g, '').trim() || rawText;
+  }
 
   // ── Step 3: Extract memory references ────────────────────
   const memoryReferences = extractMemoryReferences(cleanedText, memories);
