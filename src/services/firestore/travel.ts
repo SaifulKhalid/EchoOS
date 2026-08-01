@@ -28,7 +28,7 @@ export async function fetchTravel(uid: string): Promise<TravelEntry[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => safeDoc<TravelEntry>(d));
   } catch (err) {
-    throw new Error(`Failed to fetch travel: ${(err as Error).message}`);
+    throw new Error(`Failed to fetch travel: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -48,7 +48,7 @@ export async function addTravel(
     );
     return ref.id;
   } catch (err) {
-    throw new Error(`Failed to add travel: ${(err as Error).message}`);
+    throw new Error(`Failed to add travel: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -68,7 +68,7 @@ export async function updateTravel(
       }),
     );
   } catch (err) {
-    throw new Error(`Failed to update travel: ${(err as Error).message}`);
+    throw new Error(`Failed to update travel: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -78,6 +78,6 @@ export async function deleteTravel(uid: string, id: string): Promise<void> {
   try {
     await deleteDoc(travelRef(uid, id));
   } catch (err) {
-    throw new Error(`Failed to delete travel: ${(err as Error).message}`);
+    throw new Error(`Failed to delete travel: ${(err as Error).message}`, { cause: err });
   }
 }

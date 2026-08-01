@@ -35,7 +35,7 @@ export async function fetchNotifications(uid: string): Promise<NotificationEntry
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => safeDoc<NotificationEntry>(d));
   } catch (err) {
-    throw new Error(`Failed to fetch notifications: ${(err as Error).message}`);
+    throw new Error(`Failed to fetch notifications: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -54,7 +54,7 @@ export async function addNotification(
     );
     return ref.id;
   } catch (err) {
-    throw new Error(`Failed to add notification: ${(err as Error).message}`);
+    throw new Error(`Failed to add notification: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -70,7 +70,7 @@ export async function markNotificationRead(
       firestorePayload({ read: true }),
     );
   } catch (err) {
-    throw new Error(`Failed to mark notification read: ${(err as Error).message}`);
+    throw new Error(`Failed to mark notification read: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -93,7 +93,7 @@ export async function markAllNotificationsRead(uid: string): Promise<void> {
       await batch.commit();
     }
   } catch (err) {
-    throw new Error(`Failed to mark all notifications read: ${(err as Error).message}`);
+    throw new Error(`Failed to mark all notifications read: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -106,6 +106,6 @@ export async function deleteNotification(
   try {
     await deleteDoc(notifDocRef(uid, id));
   } catch (err) {
-    throw new Error(`Failed to delete notification: ${(err as Error).message}`);
+    throw new Error(`Failed to delete notification: ${(err as Error).message}`, { cause: err });
   }
 }

@@ -28,7 +28,7 @@ export async function fetchReminders(uid: string): Promise<ReminderEntry[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => safeDoc<ReminderEntry>(d));
   } catch (err) {
-    throw new Error(`Failed to fetch reminders: ${(err as Error).message}`);
+    throw new Error(`Failed to fetch reminders: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -47,7 +47,7 @@ export async function addReminder(
     );
     return ref.id;
   } catch (err) {
-    throw new Error(`Failed to add reminder: ${(err as Error).message}`);
+    throw new Error(`Failed to add reminder: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -64,7 +64,7 @@ export async function updateReminder(
       firestorePayload({ ...data }),
     );
   } catch (err) {
-    throw new Error(`Failed to update reminder: ${(err as Error).message}`);
+    throw new Error(`Failed to update reminder: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -74,6 +74,6 @@ export async function deleteReminder(uid: string, id: string): Promise<void> {
   try {
     await deleteDoc(reminderDocRef(uid, id));
   } catch (err) {
-    throw new Error(`Failed to delete reminder: ${(err as Error).message}`);
+    throw new Error(`Failed to delete reminder: ${(err as Error).message}`, { cause: err });
   }
 }

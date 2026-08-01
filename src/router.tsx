@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- Router config: lazy() page consts plus a single `router` export; fast-refresh is not applicable to this module. */
 import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';

@@ -28,7 +28,7 @@ export async function fetchFood(uid: string): Promise<FoodEntry[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => safeDoc<FoodEntry>(d));
   } catch (err) {
-    throw new Error(`Failed to fetch food: ${(err as Error).message}`);
+    throw new Error(`Failed to fetch food: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -49,7 +49,7 @@ export async function addFood(
     );
     return ref.id;
   } catch (err) {
-    throw new Error(`Failed to add food: ${(err as Error).message}`);
+    throw new Error(`Failed to add food: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -69,7 +69,7 @@ export async function updateFood(
       }),
     );
   } catch (err) {
-    throw new Error(`Failed to update food: ${(err as Error).message}`);
+    throw new Error(`Failed to update food: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -79,6 +79,6 @@ export async function deleteFood(uid: string, id: string): Promise<void> {
   try {
     await deleteDoc(foodRef(uid, id));
   } catch (err) {
-    throw new Error(`Failed to delete food: ${(err as Error).message}`);
+    throw new Error(`Failed to delete food: ${(err as Error).message}`, { cause: err });
   }
 }

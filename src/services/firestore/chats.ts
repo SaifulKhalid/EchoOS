@@ -26,7 +26,7 @@ export async function fetchMessages(uid: string): Promise<ChatMessage[]> {
     const snap = await getDocs(q);
     return snap.docs.map((d) => safeDoc<ChatMessage>(d));
   } catch (err) {
-    throw new Error(`Failed to fetch messages: ${(err as Error).message}`);
+    throw new Error(`Failed to fetch messages: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -54,6 +54,6 @@ export async function addMessage(
     );
     return ref.id;
   } catch (err) {
-    throw new Error(`Failed to add message: ${(err as Error).message}`);
+    throw new Error(`Failed to add message: ${(err as Error).message}`, { cause: err });
   }
 }

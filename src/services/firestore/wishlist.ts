@@ -28,7 +28,7 @@ export async function fetchWishlist(uid: string): Promise<WishlistEntry[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => safeDoc<WishlistEntry>(d));
   } catch (err) {
-    throw new Error(`Failed to fetch wishlist: ${(err as Error).message}`);
+    throw new Error(`Failed to fetch wishlist: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -48,7 +48,7 @@ export async function addWishlistItem(
     );
     return ref.id;
   } catch (err) {
-    throw new Error(`Failed to add wishlist item: ${(err as Error).message}`);
+    throw new Error(`Failed to add wishlist item: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -68,7 +68,7 @@ export async function updateWishlistItem(
       }),
     );
   } catch (err) {
-    throw new Error(`Failed to update wishlist item: ${(err as Error).message}`);
+    throw new Error(`Failed to update wishlist item: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -78,6 +78,6 @@ export async function deleteWishlistItem(uid: string, id: string): Promise<void>
   try {
     await deleteDoc(wishlistItemRef(uid, id));
   } catch (err) {
-    throw new Error(`Failed to delete wishlist item: ${(err as Error).message}`);
+    throw new Error(`Failed to delete wishlist item: ${(err as Error).message}`, { cause: err });
   }
 }

@@ -63,7 +63,7 @@ export function MovieEditModal({
     } catch {
       useToastStore.getState().error('Failed to save. Please check your connection and try again.');
     }
-  }, [movie.id, rating, mood, review, favorite, rewatch, tagsInput, updateMovie, onClose]);
+  }, [movie.id, movie.title, rating, mood, review, favorite, rewatch, tagsInput, updateMovie, onClose]);
 
   const handleDelete = useCallback(async () => {
     if (!window.confirm(`Delete "${movie.title}"? This cannot be undone.`)) return;
@@ -74,7 +74,7 @@ export function MovieEditModal({
     } catch {
       useToastStore.getState().error('Failed to delete. Please try again.');
     }
-  }, [movie.id, deleteMovie, onClose]);
+  }, [movie.id, movie.title, deleteMovie, onClose]);
 
   // Close on Escape
   useEffect(() => {

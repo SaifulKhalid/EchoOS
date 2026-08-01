@@ -7,7 +7,7 @@ import { useToastStore } from '@/services/toastStore';
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => {
-      const { initial, animate, exit, transition, layout, ...validProps } = props as Record<string, unknown>;
+      const { initial: _initial, animate: _animate, exit: _exit, transition: _transition, layout: _layout, ...validProps } = props as Record<string, unknown>;
       return <div {...validProps}>{children}</div>;
     },
   },

@@ -30,7 +30,7 @@ vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => {
       // Filter out framer-motion specific props to avoid React warnings
-      const { initial, animate, exit, transition, layout, ...validProps } = props as Record<string, unknown>;
+      const { initial: _initial, animate: _animate, exit: _exit, transition: _transition, layout: _layout, ...validProps } = props as Record<string, unknown>;
       return <div {...validProps}>{children}</div>;
     },
   },

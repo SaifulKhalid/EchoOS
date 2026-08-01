@@ -28,7 +28,7 @@ export async function fetchMovies(uid: string): Promise<MovieEntry[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => safeDoc<MovieEntry>(d));
   } catch (err) {
-    throw new Error(`Failed to fetch movies: ${(err as Error).message}`);
+    throw new Error(`Failed to fetch movies: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -49,7 +49,7 @@ export async function addMovie(
     );
     return ref.id;
   } catch (err) {
-    throw new Error(`Failed to add movie: ${(err as Error).message}`);
+    throw new Error(`Failed to add movie: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -69,7 +69,7 @@ export async function updateMovie(
       }),
     );
   } catch (err) {
-    throw new Error(`Failed to update movie: ${(err as Error).message}`);
+    throw new Error(`Failed to update movie: ${(err as Error).message}`, { cause: err });
   }
 }
 
@@ -79,6 +79,6 @@ export async function deleteMovie(uid: string, id: string): Promise<void> {
   try {
     await deleteDoc(movieRef(uid, id));
   } catch (err) {
-    throw new Error(`Failed to delete movie: ${(err as Error).message}`);
+    throw new Error(`Failed to delete movie: ${(err as Error).message}`, { cause: err });
   }
 }

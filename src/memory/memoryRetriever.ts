@@ -149,7 +149,6 @@ export async function retrieveMemories(
   for (const { category, items } of results) {
     const collectionKey = category === 'note' ? 'notes' : `${category}s`;
     if (collectionKey in memories) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic key assignment
       (memories as unknown as Record<string, unknown[]>)[collectionKey] = items;
     }
     categoryCounts[category] = items.length;
