@@ -38,7 +38,7 @@ export function Topbar() {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-haspopup="menu"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-gradient text-sm font-semibold text-ink-950 shadow-glow transition-transform active:scale-95"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-indigo-600 text-xs font-semibold text-white shadow-sm transition-transform active:scale-95"
           aria-label="Account menu"
         >
           {user?.photoURL ? (
@@ -59,12 +59,12 @@ export function Topbar() {
               onClick={() => setOpen(false)}
               aria-hidden
             />
-            <div role="menu" className="glass-strong absolute right-0 z-20 mt-2 w-56 rounded-2xl p-2 animate-fade-in">
+            <div role="menu" className="absolute right-0 z-20 mt-2 w-56 rounded-xl border border-white/10 bg-[#161924] p-1.5 shadow-glass-lg animate-fade-in">
               <div className="border-b border-white/10 px-3 py-2">
-                <p className="truncate text-sm font-medium text-white/90">
+                <p className="truncate text-xs font-medium text-gray-200">
                   {user?.displayName ?? 'Guest session'}
                 </p>
-                <p className="truncate text-xs text-white/50">
+                <p className="truncate text-[11px] text-gray-400">
                   {user?.email ?? (user?.isAnonymous ? 'Anonymous mode' : '')}
                 </p>
               </div>
@@ -76,9 +76,9 @@ export function Topbar() {
                   await triggerDemoMode();
                 }}
                 disabled={isSeeding}
-                className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-accent-soft transition-colors hover:bg-white/5"
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-indigo-400 transition-colors hover:bg-white/[0.05]"
               >
-                <IconSparkle width={16} height={16} />
+                <IconSparkle width={15} height={15} />
                 {isSeeding ? 'Seeding Demo...' : 'Load Demo Sample Data'}
               </button>
 
@@ -89,9 +89,9 @@ export function Topbar() {
                   if (isAnon && !window.confirm('You are signed in as a guest. Signing out will permanently lose all your data unless you link a Google account first. Continue?')) return;
                   signOut();
                 }}
-                className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-gray-300 transition-colors hover:bg-white/[0.05] hover:text-white"
               >
-                <IconLogout width={17} height={17} />
+                <IconLogout width={16} height={16} />
                 Sign out
               </button>
             </div>

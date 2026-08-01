@@ -32,7 +32,7 @@ export function ThemeToggle({
       <motion.div
         layout
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-        className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-accent-gradient text-xs shadow-glow ${
+        className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs shadow-sm ${
           isDark ? 'ml-0' : 'ml-7'
         }`}
       />

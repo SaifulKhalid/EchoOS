@@ -48,7 +48,7 @@ export function ChatInput({
   }
 
   return (
-    <div className="glass-strong flex items-end gap-3 rounded-2xl border border-white/10 px-4 py-3 transition-all focus-within:border-accent/40">
+    <div className="flex items-end gap-3 rounded-xl border border-white/10 bg-[#141722] px-4 py-3 shadow-card transition-all focus-within:border-indigo-500/50">
       <textarea
         ref={textareaRef}
         value={text}
@@ -58,16 +58,16 @@ export function ChatInput({
         placeholder="Ask about your memories…"
         rows={1}
         disabled={disabled}
-        className="max-h-40 min-h-[1.5rem] flex-1 resize-none bg-transparent text-sm text-white/90 placeholder-white/30 outline-none disabled:opacity-50"
+        className="max-h-40 min-h-[1.5rem] flex-1 resize-none bg-transparent text-sm text-gray-100 placeholder-gray-500 outline-none disabled:opacity-50"
       />
       <button
         onClick={handleSubmit}
         disabled={!text.trim() || disabled}
         aria-label="Send message"
-        className="btn-primary shrink-0 px-4 py-2"
+        className="btn-primary shrink-0 px-3.5 py-2"
       >
         {disabled ? (
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-ink-950/40 border-t-ink-950" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
         ) : (
           <IconSparkle width={16} height={16} />
         )}

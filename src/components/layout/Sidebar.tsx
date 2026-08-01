@@ -48,7 +48,7 @@ function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
   return (
     <div className="space-y-1">
       {title && (
-        <p className="px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wider text-white/55">
+        <p className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
           {title}
         </p>
       )}
@@ -58,10 +58,10 @@ function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
           to={to}
           end={to === ROUTES.dashboard}
           className={({ isActive }) =>
-            `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+            `group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               isActive
-                ? 'text-white'
-                : 'text-white/55 hover:bg-white/5 hover:text-white/90'
+                ? 'text-white font-semibold'
+                : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-200'
             }`
           }
         >
@@ -70,12 +70,12 @@ function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
               {isActive && (
                 <motion.span
                   layoutId="nav-active"
-                  className="absolute inset-0 rounded-xl border border-white/10 bg-white/10"
+                  className="absolute inset-0 rounded-lg border border-white/10 bg-white/[0.08]"
                   transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                 />
               )}
               <span className="relative z-10 flex items-center gap-3">
-                <Icon width={19} height={19} />
+                <Icon width={18} height={18} />
                 {label}
               </span>
             </>

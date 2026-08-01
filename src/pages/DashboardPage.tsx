@@ -103,7 +103,7 @@ function BarItem({ label, count, max, color }: { label: string; count: number; m
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
-          className={`h-full rounded-full ${color ?? 'bg-accent-gradient'}`}
+          className={`h-full rounded-full ${color ?? 'bg-indigo-500'}`}
         />
       </div>
     </div>
@@ -248,11 +248,11 @@ export default function DashboardPage() {
         <motion.div variants={item}>
           <GlassCard className="relative overflow-hidden">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent-gradient text-ink-950 shadow-glow">
-                <IconSparkle width={20} height={20} />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-500/30 bg-indigo-600 text-white shadow-sm">
+                <IconSparkle width={18} height={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="mb-1.5 text-xs uppercase tracking-wider text-accent-soft">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-indigo-400">
                   AI Insight
                 </p>
                 <div className="space-y-1">
@@ -363,7 +363,7 @@ export default function DashboardPage() {
                       initial={{ height: 0 }}
                       animate={{ height: `${(m.count / maxMonthlyCount) * 100}px` }}
                       transition={{ duration: 0.6, delay: m.month * 0.03, ease: 'easeOut' }}
-                      className="w-full rounded-t-md bg-accent-gradient"
+                      className="w-full rounded-t-md bg-indigo-500"
                       style={{ minHeight: m.count > 0 ? '4px' : '0' }}
                     />
                     {m.count > 0 && (

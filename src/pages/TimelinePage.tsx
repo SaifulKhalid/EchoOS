@@ -299,8 +299,8 @@ function FilterButton({
       onClick={onClick}
       className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
         active
-          ? 'bg-accent-gradient text-ink-950'
-          : 'text-white/50 hover:text-white/80'
+          ? 'bg-indigo-600 text-white shadow-sm'
+          : 'text-gray-400 hover:text-gray-200'
       }`}
     >
       {children}

@@ -144,8 +144,8 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
                       onClick={() => setCategory(cat.id)}
                       className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         category === cat.id
-                          ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
+                          ? 'border-indigo-500/50 bg-indigo-600 text-white shadow-sm'
+                          : 'border-white/10 bg-white/[0.04] text-gray-300 hover:border-white/20 hover:text-white'
                       }`}
                     >
                       <span>{cat.icon}</span>
@@ -157,7 +157,7 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
 
               {/* Title */}
               <div>
-                <label htmlFor="wishlist-title" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
+                <label htmlFor="wishlist-title" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-400">
                   Title *
                 </label>
                 <input
@@ -166,14 +166,14 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="What do you want to experience?"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/90 placeholder-white/30 outline-none transition-colors focus:border-accent/50 focus:bg-white/10"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-gray-100 placeholder-gray-500 outline-none transition-colors focus:border-indigo-500/60 focus:bg-white/[0.06]"
                   autoFocus
                 />
               </div>
 
               {/* Note */}
               <div>
-                <label htmlFor="wishlist-note" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
+                <label htmlFor="wishlist-note" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-400">
                   Note
                 </label>
                 <textarea
@@ -182,24 +182,24 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Why do you want this? Any specific details?"
                   rows={3}
-                  className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/90 placeholder-white/30 outline-none transition-colors focus:border-accent/50 focus:bg-white/10"
+                  className="w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-gray-100 placeholder-gray-500 outline-none transition-colors focus:border-indigo-500/60 focus:bg-white/[0.06]"
                 />
               </div>
 
               {/* Done toggle */}
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-white/70">
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-gray-300">
                 <input
                   type="checkbox"
                   checked={done}
                   onChange={(e) => setDone(e.target.checked)}
-                  className="h-4 w-4 rounded border-white/20 bg-white/10 accent-accent focus:ring-accent"
+                  className="h-4 w-4 rounded border-white/20 bg-white/10 accent-indigo-600 focus:ring-indigo-500"
                 />
                 Mark as completed
               </label>
 
               {/* Mood */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-400">
                   Mood
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -210,8 +210,8 @@ export function WishlistFormModal({ entry, onClose }: WishlistFormModalProps) {
                       onClick={() => setMood(mood === m.id ? undefined : m.id)}
                       className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         mood === m.id
-                          ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
+                          ? 'border-indigo-500/50 bg-indigo-600 text-white shadow-sm'
+                          : 'border-white/10 bg-white/[0.04] text-gray-300 hover:border-white/20 hover:text-white'
                       }`}
                     >
                       {m.label}

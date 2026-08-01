@@ -84,8 +84,8 @@ export default function NotesPage() {
                 onClick={() => setFilterType(f.id)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   filterType === f.id
-                    ? 'bg-accent-gradient text-ink-950'
-                    : 'text-white/50 hover:text-white/80'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
                 {f.label}
@@ -100,8 +100,8 @@ export default function NotesPage() {
                 onClick={() => setSortBy(opt.key)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   sortBy === opt.key
-                    ? 'bg-accent-gradient text-ink-950'
-                    : 'text-white/50 hover:text-white/80'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
                 {opt.label}

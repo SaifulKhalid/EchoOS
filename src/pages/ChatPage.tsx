@@ -367,13 +367,13 @@ export default function ChatPage() {
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center justify-center py-12 text-center"
             >
-              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-gradient text-ink-950 shadow-glow">
-                <IconChat width={28} height={28} />
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 shadow-sm">
+                <IconChat width={26} height={26} />
               </div>
-              <h2 className="font-display text-xl font-semibold">
+              <h2 className="font-display text-xl font-semibold text-gray-100">
                 Your memory intelligence
               </h2>
-              <p className="mt-2 max-w-md text-sm text-white/50">
+              <p className="mt-2 max-w-md text-sm text-gray-400">
                 {EMPTY_STATE_TAGLINE}
               </p>
 
@@ -383,7 +383,7 @@ export default function ChatPage() {
                   <button
                     key={s}
                     onClick={() => handleSend(s)}
-                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white/90"
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-gray-300 transition-all hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
                   >
                     {s}
                   </button>
@@ -432,27 +432,27 @@ export default function ChatPage() {
                   animate={{ opacity: 1, y: 0 }}
                   className="glass flex items-center gap-2 rounded-xl border border-white/10 p-3"
                 >
-                  <div className="flex h-5 w-5 animate-spin items-center justify-center rounded-md bg-accent-gradient/50 text-[9px] font-bold text-ink-950">
+                  <div className="flex h-5 w-5 animate-spin items-center justify-center rounded-md border border-indigo-500/30 bg-indigo-500/15 text-[9px] font-bold text-indigo-400">
                     <IconSparkle width={10} height={10} />
                   </div>
-                  <span className="text-xs text-white/60">Performing actions…</span>
+                  <span className="text-xs text-gray-300">Performing actions…</span>
                 </motion.div>
               )}
 
               {/* Thinking indicator before first token AND first metadata */}
               {isSending && !streamingText && !lastMeta && !isExecutingTools && (
                 <div className="flex items-center gap-3 px-1">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-gradient/50 text-[10px] font-bold text-ink-950">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-md border border-indigo-500/30 bg-indigo-500/15 text-[10px] font-bold text-indigo-400">
                     <IconSparkle width={12} height={12} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-white/50">
+                    <span className="text-xs text-gray-400">
                       {isAnalyzing ? 'Analyzing your memories…' : 'Thinking…'}
                     </span>
                     <div className="flex gap-1">
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-white/30" style={{ animationDelay: '0ms' }} />
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-white/30" style={{ animationDelay: '150ms' }} />
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-white/30" style={{ animationDelay: '300ms' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400/60" style={{ animationDelay: '0ms' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400/60" style={{ animationDelay: '150ms' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400/60" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>

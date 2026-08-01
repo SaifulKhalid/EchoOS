@@ -79,7 +79,7 @@ export default function SettingsPage() {
         <GlassCard>
           <h3 className="mb-4 text-sm font-medium text-white/70">Account</h3>
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-gradient text-lg font-semibold text-ink-950">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-indigo-600 text-lg font-semibold text-white shadow-sm">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -166,7 +166,7 @@ export default function SettingsPage() {
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-gradient text-[8px] text-ink-950"
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-sm"
                     >
                       ✓
                     </motion.span>

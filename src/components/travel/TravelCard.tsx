@@ -34,8 +34,8 @@ export function TravelCard({
       )}
 
       <div className="mb-2.5 flex items-center gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-gradient/20 text-accent-soft">
-          <IconTravel width={18} height={18} />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">
+          <IconTravel width={16} height={16} />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">

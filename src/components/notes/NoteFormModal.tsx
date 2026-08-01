@@ -217,8 +217,8 @@ export function NoteFormModal({ entry, onClose }: NoteFormModalProps) {
                       onClick={() => setMood(mood === m.id ? undefined : m.id)}
                       className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                         mood === m.id
-                          ? 'border-white/30 bg-white/15 text-white shadow-glow'
-                          : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
+                          ? 'border-indigo-500/50 bg-indigo-600 text-white shadow-sm'
+                          : 'border-white/10 bg-white/[0.04] text-gray-300 hover:border-white/20 hover:text-white'
                       }`}
                     >
                       {m.label}

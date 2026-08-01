@@ -227,7 +227,7 @@ function GoalCard({
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
             <div
-              className="h-full bg-accent-gradient transition-all duration-500"
+              className="h-full bg-indigo-500 transition-all duration-500"
               style={{ width: `${Math.min(100, goal.completionRate ?? 0)}%` }}
             />
           </div>

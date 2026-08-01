@@ -43,7 +43,7 @@ export function ChatMessage({
       <div className={`max-w-[80%] md:max-w-[70%] ${isUser ? 'order-1' : 'order-1'}`}>
         {isUser ? (
           // ── User bubble ──────────────────────────────────
-          <div className="rounded-2xl bg-accent-gradient px-4 py-3 text-sm text-ink-950 shadow-glow">
+          <div className="rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm">
             {message.content}
           </div>
         ) : (
@@ -51,15 +51,15 @@ export function ChatMessage({
           <div className="space-y-2">
             <GlassCard className="p-4">
               <div className="mb-2 flex items-center gap-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-gradient text-[10px] font-bold text-ink-950">
+                <div className="flex h-5 w-5 items-center justify-center rounded-md border border-indigo-500/30 bg-indigo-500/15 text-[10px] font-bold text-indigo-400">
                   <IconSparkle width={12} height={12} />
                 </div>
-                <span className="text-xs font-medium text-accent-soft">EchoOS</span>
+                <span className="text-xs font-semibold text-gray-300">EchoOS</span>
                 {isStreaming && (
                   <span className="flex gap-0.5">
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent" style={{ animationDelay: '0ms' }} />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent" style={{ animationDelay: '150ms' }} />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent" style={{ animationDelay: '300ms' }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400" style={{ animationDelay: '0ms' }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400" style={{ animationDelay: '150ms' }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400" style={{ animationDelay: '300ms' }} />
                   </span>
                 )}
               </div>

@@ -89,8 +89,8 @@ export default function WishlistPage() {
                 onClick={() => setFilterCategory(f.id)}
                 className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   filterCategory === f.id
-                    ? 'bg-accent-gradient text-ink-950'
-                    : 'text-white/60 hover:text-white/80'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
                 {f.icon && <span>{f.icon}</span>}
@@ -106,8 +106,8 @@ export default function WishlistPage() {
                 onClick={() => setSortBy(opt.key)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   sortBy === opt.key
-                    ? 'bg-accent-gradient text-ink-950'
-                    : 'text-white/60 hover:text-white/80'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
                 {opt.label}

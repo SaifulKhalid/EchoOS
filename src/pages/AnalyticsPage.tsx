@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
                           initial={{ width: 0 }}
                           animate={{ width: `${pct}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className="h-full rounded-full bg-accent-gradient"
+                          className="h-full rounded-full bg-indigo-500"
                         />
                       </div>
                     </div>
@@ -241,7 +241,7 @@ export default function AnalyticsPage() {
                     initial={{ height: 0 }}
                     animate={{ height: `${(m.count / maxMonthlyCount) * 120}px` }}
                     transition={{ duration: 0.6, delay: m.month * 0.03, ease: 'easeOut' }}
-                    className="w-full rounded-t-md bg-accent-gradient"
+                    className="w-full rounded-t-md bg-indigo-500"
                     style={{ minHeight: m.count > 0 ? '4px' : '0' }}
                   />
                   {m.count > 0 && (

@@ -155,7 +155,7 @@ export function MovieSearchBar() {
                 {addingId === result.id ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent/40 border-t-accent" />
                 ) : (
-                  <span className="shrink-0 rounded-lg bg-accent-gradient px-2.5 py-1 text-[11px] font-medium text-ink-950 opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-medium text-white shadow-sm opacity-0 transition-opacity group-hover:opacity-100">
                     Log
                   </span>
                 )}
