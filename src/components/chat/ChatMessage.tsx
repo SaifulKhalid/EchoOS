@@ -72,7 +72,14 @@ export function ChatMessage({
               )}
 
               <div className="text-sm leading-relaxed text-white/90 whitespace-pre-wrap">
-                {message.content ? message.content.replace(/<!--ECHOOS_META[\s\S]*?(?:-->|$)/g, '').trim() : ''}
+                {(() => {
+                  const raw = message.content ?? '';
+                  const cleaned = raw.replace(/<!--ECHOOS_META[\s\S]*?(?:-->|$)/g, '').trim();
+                  if (cleaned) return cleaned;
+                  // Fallback for assistant messages whose text was lost (e.g. old Firestore records)
+                  if (message.reasoning) return `(Based on reasoning: ${message.reasoning.slice(0, 120)}…)`;
+                  return '(Response text unavailable)';
+                })()}
                 {isStreaming && <span className="ml-0.5 animate-pulse text-accent">▊</span>}
               </div>
             </GlassCard>

@@ -409,12 +409,12 @@ export default function ChatPage() {
               )}
 
               {/* Streaming message in progress */}
-              {isSending && streamingText && (
+              {isSending && (streamingText || lastMeta) && (
                 <ChatMessage
                   message={{
                     id: 'streaming',
                     role: 'assistant',
-                    content: streamingText,
+                    content: stripMetaBlock(streamingText),
                     createdAt: streamStartedAt,
                     reasoning: lastMeta?.reasoning,
                     confidence: lastMeta?.confidence,
@@ -439,8 +439,8 @@ export default function ChatPage() {
                 </motion.div>
               )}
 
-              {/* Thinking indicator before first token */}
-              {isSending && !streamingText && !isExecutingTools && (
+              {/* Thinking indicator before first token AND first metadata */}
+              {isSending && !streamingText && !lastMeta && !isExecutingTools && (
                 <div className="flex items-center gap-3 px-1">
                   <div className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-gradient/50 text-[10px] font-bold text-ink-950">
                     <IconSparkle width={12} height={12} />
